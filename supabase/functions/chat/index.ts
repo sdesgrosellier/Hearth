@@ -17,6 +17,8 @@ import { assemblePrompt, META_DELIMITER, splitReplyAndMeta } from "../_shared/pr
 import { streamMessage } from "../_shared/anthropic.ts";
 import { handleFullCircle } from "../_shared/full-circle.ts";
 import { createSseStream, errorResponse, preflight } from "../_shared/http.ts";
+import { retrieveMemory, updateMemoryAfterTurn } from "../_shared/memory.ts";
+import { CAP_MESSAGE, overMonthlyCap } from "../_shared/usage.ts";
 import { adminClient, loadProfile, requireUserId } from "../_shared/supabase.ts";
 import { getPersona, getStrangerArchetype, pickStrangerArchetype } from "../_shared/personas/index.ts";
 import type { HistoryTurn, Mode, ResponseMeta, SafetyFlag, StrangerArchetype } from "../_shared/types.ts";
@@ -81,6 +83,7 @@ Deno.serve(async (req: Request) => {
 
   const admin = adminClient();
   const profile = await loadProfile(admin, userId);
+  if (await overMonthlyCap(admin, userId)) return errorResponse(CAP_MESSAGE, 429);
 
   // ---- Session: load or create ------------------------------------------------
   let sessionId = body.session_id ?? null;
@@ -182,12 +185,15 @@ Deno.serve(async (req: Request) => {
     if (error) return errorResponse(error.message, 500);
   }
 
+  // ---- Memory (Phase 3) ------------------------------------------------------
+  const memory = await retrieveMemory(admin, profile, sessionId, message, advisorId);
+
   // ---- Prompt ----------------------------------------------------------------
   const prompt = assemblePrompt({
     persona,
     mode,
     profile,
-    memoryContext: "", // Phase 3 fills this from memory_facts + session summaries
+    memoryContext: memory.context,
     history,
     userMessage: modelMessage,
     strangerArchetype,
@@ -291,6 +297,23 @@ Deno.serve(async (req: Request) => {
         scripture_refs: meta.scripture_refs ?? [],
         usage: result.usage,
       });
+      close(); // the user has their answer; memory work continues in the background
+
+      try {
+        await updateMemoryAfterTurn(admin, {
+          profile,
+          sessionId: sessionId as string,
+          advisorId,
+          history,
+          userMessage: message,
+          advisorReply: text,
+          safetyFlag: safety,
+          offRecord,
+          askedFollowupIds: memory.followupIds,
+        });
+      } catch (err) {
+        console.error("memory update failed", (err as Error).message);
+      }
     } catch (err) {
       console.error("chat stream failed", (err as Error).message);
       // Named `server_error` so it never collides with EventSource's built-in `error`.

@@ -78,7 +78,7 @@ export default function Settings() {
           />
           <Row
             title="Remember my story"
-            detail="Advisors recall past conversations. Review or delete anything in My Story (Phase 3)."
+            detail="Advisors recall past conversations. Review, edit, or delete anything in My Story."
             value={!!s?.memory_enabled}
             onChange={(v) => setSetting("memory_enabled", v)}
           />
@@ -101,6 +101,8 @@ export default function Settings() {
             onChange={(v) => setSetting("familiar_stranger", v)}
           />
         </Card>
+
+        <Button title="Open My Story (what the advisors remember)" variant="secondary" onPress={() => router.push("/(app)/story")} />
 
         <Card style={{ gap: spacing.sm }}>
           <Heading>About the advisors</Heading>

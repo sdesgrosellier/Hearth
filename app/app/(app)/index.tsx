@@ -94,14 +94,24 @@ export default function Home() {
                   What's on your mind?
                 </Text>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Settings"
-                onPress={() => router.push("/(app)/settings")}
-                hitSlop={12}
-              >
-                <Text style={{ fontSize: 22 }}>⚙️</Text>
-              </Pressable>
+              <View style={{ flexDirection: "row", gap: spacing.md, alignItems: "center" }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="My Story: what the advisors remember"
+                  onPress={() => router.push("/(app)/story")}
+                  hitSlop={12}
+                >
+                  <Text style={{ fontSize: 22 }}>📖</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Settings"
+                  onPress={() => router.push("/(app)/settings")}
+                  hitSlop={12}
+                >
+                  <Text style={{ fontSize: 22 }}>⚙️</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View

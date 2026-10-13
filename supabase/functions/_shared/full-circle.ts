@@ -9,6 +9,7 @@ import { createSseStream, errorResponse } from "./http.ts";
 import { getPersona } from "./personas/index.ts";
 import { APP_NAME } from "./safety-layer.ts";
 import type { AssembledPrompt } from "./types.ts";
+import { CAP_MESSAGE, overMonthlyCap } from "./usage.ts";
 
 // deno-lint-ignore no-explicit-any
 type Admin = any;
@@ -91,6 +92,7 @@ export async function handleFullCircle(
   sessionId: string | undefined,
 ): Promise<Response> {
   if (!sessionId) return errorResponse("session_id is required");
+  if (await overMonthlyCap(admin, userId)) return errorResponse(CAP_MESSAGE, 429);
 
   const { data: session, error: sessionErr } = await admin
     .from("sessions")

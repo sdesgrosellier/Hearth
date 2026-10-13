@@ -32,6 +32,9 @@ function friendlyAuthError(message: string, mode: Mode): string {
   if (m.includes("email not confirmed")) {
     return "This account needs its email confirmed. Check your inbox for the link.";
   }
+  if (m.includes("database error saving new user") || m.includes("invite_code_invalid")) {
+    return "That invite code isn't valid (or has been used up). Sounding Board is in a private beta; ask Shane for a code.";
+  }
   return message;
 }
 
@@ -40,6 +43,7 @@ export default function SignInScreen() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,12 +57,20 @@ export default function SignInScreen() {
       setError("Your password needs at least 6 characters.");
       return;
     }
+    if (mode === "signup" && !inviteCode.trim()) {
+      setError("Enter your invite code. Sounding Board is in a private beta.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const result =
       mode === "signin"
         ? await supabase.auth.signInWithPassword({ email: addr, password })
-        : await supabase.auth.signUp({ email: addr, password });
+        : await supabase.auth.signUp({
+            email: addr,
+            password,
+            options: { data: { invite_code: inviteCode.trim().toUpperCase() } },
+          });
     setBusy(false);
     if (result.error) {
       setError(friendlyAuthError(result.error.message, mode));
@@ -80,9 +92,12 @@ export default function SignInScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
-            <Text style={{ fontSize: 44 }}>🔥</Text>
+            <Text style={{ fontSize: 44 }}>💬</Text>
             <Title>Sounding Board</Title>
-            <Body muted>Advice from the voices you trust. Mom, Dad, a grandparent, a stranger, or Scripture.</Body>
+            <Body muted>
+              One question, many voices: family, a stranger, a kid, an alien, figures from history, and Scripture.
+              Then see the full circle.
+            </Body>
           </View>
 
           {!isSupabaseConfigured ? (
@@ -142,9 +157,21 @@ export default function SignInScreen() {
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
             textContentType={mode === "signup" ? "newPassword" : "password"}
             placeholder={mode === "signup" ? "At least 6 characters" : "Your password"}
-            onSubmitEditing={submit}
-            returnKeyType="go"
+            onSubmitEditing={mode === "signin" ? submit : undefined}
+            returnKeyType={mode === "signin" ? "go" : "next"}
           />
+          {mode === "signup" ? (
+            <TextField
+              label="Invite code"
+              value={inviteCode}
+              onChangeText={setInviteCode}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              placeholder="From Shane"
+              onSubmitEditing={submit}
+              returnKeyType="go"
+            />
+          ) : null}
           {error ? <Small style={{ color: t.danger }}>{error}</Small> : null}
           <Button
             title={mode === "signin" ? "Sign in" : "Create my account"}

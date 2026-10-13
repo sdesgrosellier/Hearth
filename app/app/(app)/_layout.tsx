@@ -14,6 +14,7 @@ export default function AppLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="chat/[advisorId]" options={{ animation: "slide_from_right" }} />
       <Stack.Screen name="settings" options={{ presentation: "modal" }} />
+      <Stack.Screen name="story" options={{ animation: "slide_from_right" }} />
     </Stack>
   );
 }

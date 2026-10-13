@@ -1501,6 +1501,19 @@ function getStrangerArchetype(id) {
   return STRANGER_ARCHETYPES.find((a) => a.id === id) ?? null;
 }
 
+// supabase/functions/_shared/usage.ts
+var MONTHLY_TOKEN_CAP = Number(Deno.env.get("BETA_MONTHLY_TOKENS") ?? "1500000") || 0;
+var CAP_MESSAGE = "You've used this month's beta allowance. It resets on the 1st; message Shane if you need more before then.";
+async function overMonthlyCap(admin, userId) {
+  if (!MONTHLY_TOKEN_CAP) return false;
+  const period = /* @__PURE__ */ new Date();
+  const periodStart = `${period.getUTCFullYear()}-${String(period.getUTCMonth() + 1).padStart(2, "0")}-01`;
+  const { data } = await admin.from("usage").select("llm_input_tokens, llm_output_tokens").eq("user_id", userId).eq("period", periodStart).maybeSingle();
+  if (!data) return false;
+  const used = Number(data.llm_input_tokens ?? 0) + Number(data.llm_output_tokens ?? 0);
+  return used >= MONTHLY_TOKEN_CAP;
+}
+
 // supabase/functions/_shared/full-circle.ts
 var FULL_CIRCLE_SYSTEM = `
 You are the "Full circle" view inside ${APP_NAME}, a personal-advice app. Several AI advisor
@@ -1566,6 +1579,7 @@ ${r.content.trim()}`);
 }
 async function handleFullCircle(admin, userId, sessionId) {
   if (!sessionId) return errorResponse("session_id is required");
+  if (await overMonthlyCap(admin, userId)) return errorResponse(CAP_MESSAGE, 429);
   const { data: session, error: sessionErr } = await admin.from("sessions").select("id, user_id, off_record").eq("id", sessionId).maybeSingle();
   if (sessionErr) return errorResponse(sessionErr.message, 500);
   if (!session || session.user_id !== userId) return errorResponse("Session not found", 404);
@@ -1640,6 +1654,255 @@ Write the full circle now.`
   if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(run());
   else run();
   return response;
+}
+
+// supabase/functions/_shared/memory.ts
+var EMBED_DIMS = 384;
+var SEMANTIC_LIMIT = 8;
+var RECENT_FACT_LIMIT = 6;
+var SUMMARY_LIMIT = 3;
+var FOLLOWUP_LIMIT = 2;
+var DUPLICATE_SIMILARITY = 0.9;
+var MEMORY_CATEGORIES = [
+  "people",
+  "ongoing_situations",
+  "goals_and_values",
+  "preferences",
+  "upcoming_events",
+  "outcomes"
+];
+var embedSession = null;
+async function embed(text) {
+  try {
+    if (!embedSession) {
+      const ai = globalThis.Supabase?.ai;
+      if (!ai) return null;
+      embedSession = new ai.Session("gte-small");
+    }
+    const out = await embedSession.run(text.slice(0, 2e3), { mean_pool: true, normalize: true });
+    const arr = Array.from(out);
+    return arr.length === EMBED_DIMS ? arr : null;
+  } catch (err) {
+    console.warn("embed failed", err.message);
+    return null;
+  }
+}
+function fmtDate(iso, timezone) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("en-US", { timeZone: timezone, month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return iso.slice(0, 10);
+  }
+}
+var CATEGORY_LABEL = {
+  people: "people in their life",
+  ongoing_situations: "ongoing situations",
+  goals_and_values: "goals and values",
+  preferences: "preferences",
+  upcoming_events: "upcoming events",
+  outcomes: "how things turned out"
+};
+async function retrieveMemory(admin, profile, currentSessionId, query, advisorId) {
+  if (!profile.settings.memory_enabled) return { context: "", followupIds: [] };
+  const userId = profile.id;
+  const tz = profile.timezone || "UTC";
+  const byId = /* @__PURE__ */ new Map();
+  const vector = await embed(query);
+  if (vector) {
+    const { data } = await admin.rpc("match_memory_facts", {
+      p_user_id: userId,
+      p_query: vector,
+      p_limit: SEMANTIC_LIMIT,
+      p_min_similarity: 0.25
+    });
+    for (const f of data ?? []) byId.set(f.id, f);
+  }
+  const { data: recent } = await admin.from("memory_facts").select("id, category, content, event_date, status, created_at").eq("user_id", userId).is("deleted_at", null).neq("status", "archived").order("created_at", { ascending: false }).limit(RECENT_FACT_LIMIT);
+  for (const f of recent ?? []) if (!byId.has(f.id)) byId.set(f.id, f);
+  const { data: sessions } = await admin.from("sessions").select("id, started_at, advisor_ids, summary").eq("user_id", userId).is("deleted_at", null).neq("id", currentSessionId).not("summary", "is", null).order("started_at", { ascending: false }).limit(SUMMARY_LIMIT);
+  const { data: followups } = await admin.from("followups").select("id, question, advisor_id, due_at").eq("user_id", userId).eq("status", "pending").lte("due_at", (/* @__PURE__ */ new Date()).toISOString()).order("due_at", { ascending: true }).limit(FOLLOWUP_LIMIT);
+  const facts = Array.from(byId.values());
+  const lines = [];
+  if (facts.length) {
+    lines.push("THINGS THE USER HAS SHARED BEFORE (their own words, condensed; use only what changes your advice):");
+    const grouped = /* @__PURE__ */ new Map();
+    for (const f of facts) grouped.set(f.category, [...grouped.get(f.category) ?? [], f]);
+    for (const [cat, rows] of grouped) {
+      lines.push(`- ${CATEGORY_LABEL[cat] ?? cat}:`);
+      for (const f of rows) {
+        const when = f.event_date ? ` (${f.event_date})` : ` (shared ${fmtDate(f.created_at, tz)})`;
+        const resolved = f.status === "resolved" ? " [resolved]" : "";
+        lines.push(`    \u2022 ${f.content}${when}${resolved}`);
+      }
+    }
+  }
+  if (sessions?.length) {
+    lines.push("", "RECENT CONVERSATIONS (most recent first):");
+    for (const s of sessions) {
+      const who = (s.advisor_ids ?? []).map((id) => getPersona(id)?.display_name ?? id).join(", ");
+      lines.push(`- ${fmtDate(s.started_at, tz)} with ${who || "an advisor"}: ${s.summary}`);
+    }
+  }
+  const followupIds = [];
+  if (followups?.length) {
+    lines.push("", "OPEN FOLLOW-UPS (ask about one of these naturally, early in the conversation, if it fits; do not interrogate):");
+    for (const f of followups) {
+      const who = f.advisor_id ? getPersona(f.advisor_id)?.display_name ?? "" : "";
+      const mine = f.advisor_id === advisorId ? " (you asked them to report back)" : who ? ` (${who} asked about this)` : "";
+      lines.push(`- ${f.question}${mine}`);
+      followupIds.push(f.id);
+    }
+  }
+  return { context: lines.join("\n"), followupIds };
+}
+var EXTRACTOR_SYSTEM = `
+You maintain the long-term memory of a personal-advice app. After each exchange you are
+given the recent conversation, the user's newest message, the advisor's reply, and the
+facts already stored. Return ONLY a JSON object, no prose, with this shape:
+
+{"summary": "<2-3 sentences: what the user brought, what the advisor(s) suggested, where it landed; written in third person, past tense, no advice of your own>",
+ "new_facts": [{"category": "people|ongoing_situations|goals_and_values|preferences|upcoming_events|outcomes",
+                "content": "<one short sentence in the user's own terms, e.g. 'has a brother, estranged for two years after a fight about their dad's house'>",
+                "event_date": "YYYY-MM-DD or null"}],
+ "resolved_fact_ids": ["<id of a stored fact that the user now says is over or changed>"],
+ "followup": {"question": "<a natural check-in question for next time, e.g. 'How did the conversation with your brother go?'>",
+              "due_in_days": 3} }
+
+Rules:
+- new_facts contains ONLY things the USER stated about their own life in their newest
+  message (not earlier messages, which were already processed; not the advisor's guesses,
+  advice, or hypotheticals). Zero facts is a normal answer.
+- Never store: anyone's age under 18 or that someone is a minor, self-harm or suicidal
+  thoughts, abuse details, crimes, sexual activity, immigration status, medical diagnoses
+  the user did not state plainly, or any identification, card, or account number.
+- Do not duplicate or restate a fact already in the stored list; if the user updated one,
+  add the new version and put the old id in resolved_fact_ids.
+- Keep content compact and durable (prefer "is job-hunting" over "sent three r\xE9sum\xE9s today").
+- followup is null unless the user described something with a clear next moment (a talk
+  they plan to have, a decision due, an event). At most one.
+- summary is required every time and should fold in the whole conversation so far.
+`.trim();
+function parseJson(raw) {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end === -1) return null;
+  try {
+    return JSON.parse(raw.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+async function updateMemoryAfterTurn(admin, input) {
+  const { profile, sessionId, advisorId, history, userMessage, advisorReply, safetyFlag, offRecord } = input;
+  if (!profile.settings.memory_enabled || offRecord || safetyFlag === "crisis") return;
+  const userId = profile.id;
+  if (input.askedFollowupIds.length) {
+    await admin.from("followups").update({ status: "asked", asked_at: (/* @__PURE__ */ new Date()).toISOString() }).in("id", input.askedFollowupIds);
+  }
+  const { data: unembedded } = await admin.from("memory_facts").select("id, content").eq("user_id", userId).is("deleted_at", null).is("embedding", null).limit(5);
+  for (const f of unembedded ?? []) {
+    const vec = await embed(f.content);
+    if (vec) await admin.from("memory_facts").update({ embedding: vec }).eq("id", f.id);
+  }
+  const { data: stored } = await admin.from("memory_facts").select("id, category, content, status").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(40);
+  const advisorName = getPersona(advisorId)?.display_name ?? advisorId;
+  const recent = history.slice(-8).map(
+    (t) => t.role === "user" ? `USER: ${t.content}` : `${getPersona(t.advisor_id ?? "")?.display_name ?? "ADVISOR"}: ${t.content}`
+  );
+  const transcript = [
+    "RECENT CONVERSATION (already processed; context only):",
+    recent.length ? recent.join("\n") : "(none)",
+    "",
+    `USER'S NEWEST MESSAGE:
+${userMessage}`,
+    "",
+    `${advisorName.toUpperCase()} REPLIED:
+${advisorReply}`,
+    "",
+    "STORED FACTS (id | category | content):",
+    (stored ?? []).length ? (stored ?? []).map((f) => `${f.id} | ${f.category} | ${f.content}${f.status === "resolved" ? " [resolved]" : ""}`).join("\n") : "(none yet)",
+    "",
+    `Today is ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}. Return the JSON now.`
+  ].join("\n");
+  let raw = "";
+  try {
+    const result = await streamMessage(
+      {
+        system: [{ type: "text", text: EXTRACTOR_SYSTEM, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: transcript }]
+      },
+      () => {
+      },
+      { model: DEFAULT_FAST_MODEL, max_tokens: 900, thinking: "disabled" }
+    );
+    raw = result.text;
+    await admin.rpc("increment_usage", {
+      p_user_id: userId,
+      p_llm_input: result.usage.input_tokens + result.usage.cache_read_input_tokens + result.usage.cache_creation_input_tokens,
+      p_llm_output: result.usage.output_tokens,
+      p_tts_chars: 0,
+      p_stt_seconds: 0
+    });
+  } catch (err) {
+    console.error("memory extraction failed", err.message);
+    return;
+  }
+  const out = parseJson(raw);
+  if (!out) {
+    console.warn("memory extractor returned non-JSON");
+    return;
+  }
+  if (out.summary && out.summary.trim()) {
+    const summary = out.summary.trim().slice(0, 1200);
+    const vec = await embed(summary);
+    await admin.from("sessions").update({ summary, ...vec ? { summary_embedding: vec } : {} }).eq("id", sessionId);
+  }
+  const storedIds = new Set((stored ?? []).map((f) => f.id));
+  const resolved = (out.resolved_fact_ids ?? []).filter((id) => storedIds.has(id));
+  if (resolved.length) {
+    await admin.from("memory_facts").update({ status: "resolved" }).in("id", resolved);
+  }
+  for (const f of (out.new_facts ?? []).slice(0, 6)) {
+    const content = (f.content ?? "").trim();
+    const category = MEMORY_CATEGORIES.includes(f.category ?? "") ? f.category : "ongoing_situations";
+    if (content.length < 6 || content.length > 300) continue;
+    const vec = await embed(content);
+    if (vec) {
+      const { data: near } = await admin.rpc("match_memory_facts", {
+        p_user_id: userId,
+        p_query: vec,
+        p_limit: 1,
+        p_min_similarity: DUPLICATE_SIMILARITY
+      });
+      if ((near ?? []).length) continue;
+    }
+    const eventDate = f.event_date && /^\d{4}-\d{2}-\d{2}$/.test(f.event_date) ? f.event_date : null;
+    await admin.from("memory_facts").insert({
+      user_id: userId,
+      category,
+      content,
+      source_session_id: sessionId,
+      stated_by_user: true,
+      confidence: 0.9,
+      event_date: eventDate,
+      ...vec ? { embedding: vec } : {}
+    });
+  }
+  const q = out.followup?.question?.trim();
+  if (q && q.length > 8 && q.length < 240) {
+    const { data: existing } = await admin.from("followups").select("id").eq("user_id", userId).eq("source_session_id", sessionId).in("status", ["pending", "asked"]).limit(1);
+    if (!(existing ?? []).length) {
+      const days = Math.min(Math.max(Number(out.followup?.due_in_days ?? 3) || 3, 1), 30);
+      await admin.from("followups").insert({
+        user_id: userId,
+        question: q,
+        advisor_id: advisorId,
+        source_session_id: sessionId,
+        due_at: new Date(Date.now() + days * 864e5).toISOString()
+      });
+    }
+  }
 }
 
 // supabase/functions/_shared/supabase.ts
@@ -1733,6 +1996,7 @@ Deno.serve(async (req) => {
   if (!persona) return errorResponse(`Unknown advisor: ${advisorId}`, 404);
   const admin = adminClient();
   const profile = await loadProfile(admin, userId);
+  if (await overMonthlyCap(admin, userId)) return errorResponse(CAP_MESSAGE, 429);
   let sessionId = body.session_id ?? null;
   let sessionMeta = {};
   let offRecord = false;
@@ -1795,12 +2059,12 @@ Deno.serve(async (req) => {
     });
     if (error) return errorResponse(error.message, 500);
   }
+  const memory = await retrieveMemory(admin, profile, sessionId, message, advisorId);
   const prompt = assemblePrompt({
     persona,
     mode,
     profile,
-    memoryContext: "",
-    // Phase 3 fills this from memory_facts + session summaries
+    memoryContext: memory.context,
     history,
     userMessage: modelMessage,
     strangerArchetype,
@@ -1887,6 +2151,22 @@ Deno.serve(async (req) => {
         scripture_refs: meta.scripture_refs ?? [],
         usage: result.usage
       });
+      close();
+      try {
+        await updateMemoryAfterTurn(admin, {
+          profile,
+          sessionId,
+          advisorId,
+          history,
+          userMessage: message,
+          advisorReply: text,
+          safetyFlag: safety,
+          offRecord,
+          askedFollowupIds: memory.followupIds
+        });
+      } catch (err) {
+        console.error("memory update failed", err.message);
+      }
     } catch (err) {
       console.error("chat stream failed", err.message);
       send("server_error", { message: "Something went wrong while answering. Please try again." });

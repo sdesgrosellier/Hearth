@@ -111,6 +111,7 @@ export async function streamChat(
       if (e.xhrStatus === 401) message = "Your session expired. Please sign in again.";
       else if (e.xhrStatus === 404) message = "That advisor isn't available.";
       else if (e.xhrStatus === 400) message = "Ask at least two advisors first, then come back for the full circle.";
+      else if (e.xhrStatus === 429) message = "You've used this month's beta allowance. It resets on the 1st.";
       else if (e.xhrStatus >= 500) message = "The advisors are busy right now. Try again in a moment.";
       else if (e.message) message = e.message;
     } else if (e.type === "exception" || e.type === "timeout") {
