@@ -9,8 +9,16 @@ export const CORS_HEADERS: Record<string, string> = {
 };
 
 export function preflight(req: Request): Response | null {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
-  return null;
+  if (req.method !== "OPTIONS") return null;
+  // Echo whatever headers the browser intends to send (streaming clients add
+  // Cache-Control, X-Requested-With, Last-Event-ID, ...), on top of our defaults.
+  const requested = req.headers.get("access-control-request-headers");
+  const allow = requested
+    ? `${CORS_HEADERS["Access-Control-Allow-Headers"]}, ${requested}`
+    : CORS_HEADERS["Access-Control-Allow-Headers"];
+  return new Response("ok", {
+    headers: { ...CORS_HEADERS, "Access-Control-Allow-Headers": allow, Vary: "Access-Control-Request-Headers" },
+  });
 }
 
 export function jsonResponse(body: unknown, status = 200): Response {

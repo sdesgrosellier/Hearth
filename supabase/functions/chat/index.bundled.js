@@ -355,8 +355,12 @@ var CORS_HEADERS = {
   "Access-Control-Max-Age": "86400"
 };
 function preflight(req) {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
-  return null;
+  if (req.method !== "OPTIONS") return null;
+  const requested = req.headers.get("access-control-request-headers");
+  const allow = requested ? `${CORS_HEADERS["Access-Control-Allow-Headers"]}, ${requested}` : CORS_HEADERS["Access-Control-Allow-Headers"];
+  return new Response("ok", {
+    headers: { ...CORS_HEADERS, "Access-Control-Allow-Headers": allow, Vary: "Access-Control-Request-Headers" }
+  });
 }
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
