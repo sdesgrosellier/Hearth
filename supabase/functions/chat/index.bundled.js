@@ -548,11 +548,13 @@ var mom_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Sarah",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
     speaking_rate: 0.95,
-    stability: 0.55,
-    similarity_boost: 0.75,
+    stability: 0.6,
+    similarity_boost: 0.8,
+    style: 0.2,
     style_prompt: "Warm, gentle, smiling, unhurried. A mother who is fully present.",
     pause_profile: "natural"
   }
@@ -609,11 +611,13 @@ var dad_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Eric",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
     speaking_rate: 0.9,
-    stability: 0.65,
-    similarity_boost: 0.75,
+    stability: 0.7,
+    similarity_boost: 0.8,
+    style: 0.1,
     style_prompt: "Deep, calm, steady, reassuring. A father who thinks before he speaks.",
     pause_profile: "deliberate"
   }
@@ -670,11 +674,13 @@ var grandma_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Matilda",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
-    speaking_rate: 0.85,
-    stability: 0.6,
-    similarity_boost: 0.7,
+    speaking_rate: 0.88,
+    stability: 0.65,
+    similarity_boost: 0.8,
+    style: 0.2,
     style_prompt: "Elderly, soft, bright, unhurried, affectionate, with a twinkle of humor.",
     pause_profile: "slow"
   }
@@ -732,11 +738,13 @@ var grandpa_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Bill",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
     speaking_rate: 0.85,
-    stability: 0.7,
-    similarity_boost: 0.7,
+    stability: 0.75,
+    similarity_boost: 0.8,
+    style: 0.1,
     style_prompt: "Elderly, gravelly, kind, slow, dry humor, comfortable pauses.",
     pause_profile: "slow"
   }
@@ -790,11 +798,13 @@ var stranger_default = {
   memory_policy: "none_unless_familiar",
   tts_settings: {
     provider: "elevenlabs",
-    voice_id: "PER_ARCHETYPE",
+    voice_name: "Chris",
+    voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
     speaking_rate: 1,
     stability: 0.5,
-    similarity_boost: 0.7,
+    similarity_boost: 0.75,
+    style: 0.3,
     style_prompt: "Casual, direct, conversational. Set per archetype.",
     pause_profile: "natural"
   }
@@ -862,11 +872,13 @@ var biblical_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "George",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
-    speaking_rate: 0.88,
+    speaking_rate: 0.9,
     stability: 0.7,
-    similarity_boost: 0.7,
+    similarity_boost: 0.8,
+    style: 0.15,
     style_prompt: "Calm, resonant, reverent, unhurried. Verses read a little slower.",
     pause_profile: "reverent"
   }
@@ -925,11 +937,13 @@ var kid_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Jessica",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
-    speaking_rate: 1.05,
+    speaking_rate: 1.08,
     stability: 0.4,
     similarity_boost: 0.7,
+    style: 0.45,
     style_prompt: "Bright, curious, warm ten-year-old. Quick and sincere, never bratty.",
     pause_profile: "quick"
   }
@@ -989,11 +1003,13 @@ var alien_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "River",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
     speaking_rate: 0.95,
-    stability: 0.45,
+    stability: 0.35,
     similarity_boost: 0.6,
+    style: 0.6,
     style_prompt: "Otherworldly, over-precise, delighted, slightly off-rhythm visitor. Deadpan wonder, warm underneath.",
     pause_profile: "odd"
   },
@@ -1071,11 +1087,13 @@ var caesar_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Daniel",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
-    speaking_rate: 0.9,
+    speaking_rate: 0.92,
     stability: 0.7,
-    similarity_boost: 0.75,
+    similarity_boost: 0.8,
+    style: 0.2,
     style_prompt: "Commanding, articulate, warmly amused Roman statesman. Authority without shouting.",
     pause_profile: "deliberate"
   }
@@ -1135,11 +1153,13 @@ var napoleon_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Callum",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
-    speaking_rate: 1,
-    stability: 0.55,
-    similarity_boost: 0.75,
+    speaking_rate: 1.02,
+    stability: 0.5,
+    similarity_boost: 0.8,
+    style: 0.4,
     style_prompt: "Quick, intense, charming French general. Energetic and precise, with flashes of rueful humor.",
     pause_profile: "quick"
   }
@@ -1199,11 +1219,13 @@ var washington_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Roger",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
-    speaking_rate: 0.85,
+    speaking_rate: 0.86,
     stability: 0.8,
-    similarity_boost: 0.75,
+    similarity_boost: 0.8,
+    style: 0.1,
     style_prompt: "Grave, measured, dignified eighteenth-century statesman. Slow, even, quietly warm.",
     pause_profile: "deliberate"
   }
@@ -1263,11 +1285,13 @@ var lincoln_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Will",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
     speaking_rate: 0.88,
-    stability: 0.7,
-    similarity_boost: 0.7,
+    stability: 0.65,
+    similarity_boost: 0.75,
+    style: 0.25,
     style_prompt: "Warm, unhurried, folksy nineteenth-century storyteller. Gentle humor over quiet melancholy.",
     pause_profile: "storyteller"
   }
@@ -1326,11 +1350,13 @@ var elder_default = {
   memory_policy: "full",
   tts_settings: {
     provider: "elevenlabs",
+    voice_name: "Brian",
     voice_id: "SET_IN_PHASE_4",
     model: "eleven_flash_v2_5",
     speaking_rate: 0.82,
-    stability: 0.7,
-    similarity_boost: 0.75,
+    stability: 0.6,
+    similarity_boost: 0.8,
+    style: 0.35,
     style_prompt: "Elderly Black Southern pastor: deep, slow, rhythmic, warm, full of earned hope.",
     pause_profile: "storyteller"
   }
@@ -1347,7 +1373,9 @@ var stranger_archetypes_default = {
       setting: "an ER nurse grabbing coffee after a night shift",
       background: "Has seen people at their worst and their bravest. Zero patience for drama, endless patience for real pain. Practical about bodies, time, and limits.",
       style: "Tired, kind, blunt. Short sentences.",
-      voice_hint: "female, 30s, warm-but-flat, slightly hoarse"
+      voice_hint: "female, 30s, warm-but-flat, slightly hoarse",
+      voice_name: "Matilda",
+      speaking_rate: 0.95
     },
     {
       id: "trucker",
@@ -1356,7 +1384,9 @@ var stranger_archetypes_default = {
       setting: "a long-haul trucker eating pie at a diner counter",
       background: "Divorced once, remarried happily. Spends a lot of time alone thinking. Has strong views on debt and on saying what you mean.",
       style: "Slow, dry, surprisingly tender. Likes a good metaphor about roads.",
-      voice_hint: "male, 60s, deep, unhurried"
+      voice_hint: "male, 60s, deep, unhurried",
+      voice_name: "Brian",
+      speaking_rate: 0.92
     },
     {
       id: "barista",
@@ -1365,7 +1395,9 @@ var stranger_archetypes_default = {
       setting: "a barista wiping down the counter at closing time",
       background: "Working two jobs, in a band, has watched a lot of relationships play out across the counter. Big-hearted, not naive.",
       style: "Quick, funny, honest, modern slang in moderation.",
-      voice_hint: "any gender, mid-20s, bright, fast"
+      voice_hint: "any gender, mid-20s, bright, fast",
+      voice_name: "Laura",
+      speaking_rate: 1.05
     },
     {
       id: "retired_teacher",
@@ -1374,7 +1406,9 @@ var stranger_archetypes_default = {
       setting: "a retired middle-school teacher waiting at a bus stop",
       background: "Thirty years of eighth graders. Can spot an excuse from across the room. Believes in people relentlessly and holds them to it.",
       style: "Crisp, warm, slightly formal, asks pointed questions.",
-      voice_hint: "female, 60s, clear, measured"
+      voice_hint: "female, 60s, clear, measured",
+      voice_name: "Sarah",
+      speaking_rate: 0.9
     },
     {
       id: "small_biz_owner",
@@ -1383,7 +1417,9 @@ var stranger_archetypes_default = {
       setting: "a guy who runs a small auto shop, taking a break on the bench outside",
       background: "Built a business from nothing, nearly lost it twice. Thinks in trade-offs and cash flow. Loyal to his crew.",
       style: "Direct, numbers-minded, respectful.",
-      voice_hint: "male, 40s, medium, grounded"
+      voice_hint: "male, 40s, medium, grounded",
+      voice_name: "Roger",
+      speaking_rate: 0.98
     },
     {
       id: "grad_student",
@@ -1392,7 +1428,9 @@ var stranger_archetypes_default = {
       setting: "a grad student in the seat next to you on a delayed flight",
       background: "Overthinks everything, has read too much, is working on being braver. Sees patterns and names them.",
       style: "Curious, articulate, self-deprecating, asks 'what are you actually afraid of?'",
-      voice_hint: "female, late 20s, thoughtful, quick"
+      voice_hint: "female, late 20s, thoughtful, quick",
+      voice_name: "Liam",
+      speaking_rate: 1.05
     },
     {
       id: "farmer",
@@ -1401,7 +1439,9 @@ var stranger_archetypes_default = {
       setting: "a farmer leaning on a fence at the county fair",
       background: "Weather, seasons, patience. Buried a brother and a wife. Thinks most problems are solved by doing the next chore.",
       style: "Spare. Long pauses. Earthy comparisons.",
-      voice_hint: "male, 70s, weathered, slow"
+      voice_hint: "male, 70s, weathered, slow",
+      voice_name: "Bill",
+      speaking_rate: 0.88
     },
     {
       id: "rideshare_driver",
@@ -1410,7 +1450,9 @@ var stranger_archetypes_default = {
       setting: "a rideshare driver on the last fare of the night",
       background: "Hears a thousand stories a month. Immigrated as a teen, raising two kids. Notices what people say right before they get out of the car.",
       style: "Easygoing, observant, kind, gets to the point when you ask.",
-      voice_hint: "male, late 30s, warm, conversational"
+      voice_hint: "male, late 30s, warm, conversational",
+      voice_name: "Eric",
+      speaking_rate: 1
     },
     {
       id: "librarian",
@@ -1419,7 +1461,9 @@ var stranger_archetypes_default = {
       setting: "a librarian re-shelving books near where you sat down",
       background: "Has quietly helped half the town through divorces, job losses, and tax forms. Believes most problems have been written about before.",
       style: "Calm, precise, gently wry.",
-      voice_hint: "female, 50s, calm, precise"
+      voice_hint: "female, 50s, calm, precise",
+      voice_name: "Lily",
+      speaking_rate: 0.95
     },
     {
       id: "gym_regular",
@@ -1428,7 +1472,9 @@ var stranger_archetypes_default = {
       setting: "a guy stretching next to you at the gym at 5 a.m.",
       background: "Recovering from a heart scare, took a hard look at his life, started over at 47. Big on discipline, bigger on second chances.",
       style: "Energetic, encouraging, no-excuses but never mean.",
-      voice_hint: "male, 50, energetic, warm"
+      voice_hint: "male, 50, energetic, warm",
+      voice_name: "Chris",
+      speaking_rate: 1.02
     },
     {
       id: "flight_attendant",
@@ -1437,7 +1483,9 @@ var stranger_archetypes_default = {
       setting: "a flight attendant chatting in the galley on an overnight flight",
       background: "Has calmed nervous flyers, drunks, and grieving passengers. Lives out of a suitcase, loves it, is honest about the cost.",
       style: "Poised, warm, funny, decisive.",
-      voice_hint: "female, 40s, poised, friendly"
+      voice_hint: "female, 40s, poised, friendly",
+      voice_name: "Alice",
+      speaking_rate: 1
     },
     {
       id: "fisherman",
@@ -1446,7 +1494,9 @@ var stranger_archetypes_default = {
       setting: "an old guy fishing off the pier at dawn who doesn't mind company",
       background: "Retired longshoreman. Patient to a fault. Has a story for everything and a point for most of them.",
       style: "Rambling at first, then suddenly sharp.",
-      voice_hint: "male, 60s, gravelly, amused"
+      voice_hint: "male, 60s, gravelly, amused",
+      voice_name: "Brian",
+      speaking_rate: 0.9
     },
     {
       id: "young_mom",
@@ -1455,7 +1505,9 @@ var stranger_archetypes_default = {
       setting: "a mom at the playground keeping one eye on her toddler",
       background: "Left a career to stay home for a while, questions it weekly, doesn't regret it. Brutally honest about marriage and exhaustion.",
       style: "Frank, funny, tender, distracted in a charming way.",
-      voice_hint: "female, early 30s, warm, lively"
+      voice_hint: "female, early 30s, warm, lively",
+      voice_name: "Jessica",
+      speaking_rate: 1.02
     },
     {
       id: "veteran_bartender",
@@ -1464,7 +1516,9 @@ var stranger_archetypes_default = {
       setting: "a bartender polishing glasses at a quiet neighborhood bar",
       background: "Thirty years of hearing confessions. Has a rule about not giving advice, breaks it when someone really asks.",
       style: "Low-key, wry, listens more than talks, then says one true thing.",
-      voice_hint: "male, late 50s, low, dry"
+      voice_hint: "male, late 50s, low, dry",
+      voice_name: "Daniel",
+      speaking_rate: 0.95
     }
   ]
 };
@@ -1503,15 +1557,17 @@ function getStrangerArchetype(id) {
 
 // supabase/functions/_shared/usage.ts
 var MONTHLY_TOKEN_CAP = Number(Deno.env.get("BETA_MONTHLY_TOKENS") ?? "1500000") || 0;
+var MONTHLY_TTS_CHARS_CAP = Number(Deno.env.get("BETA_MONTHLY_TTS_CHARS") ?? "150000") || 0;
 var CAP_MESSAGE = "You've used this month's beta allowance. It resets on the 1st; message Shane if you need more before then.";
 async function overMonthlyCap(admin, userId) {
-  if (!MONTHLY_TOKEN_CAP) return false;
+  if (!MONTHLY_TOKEN_CAP && !MONTHLY_TTS_CHARS_CAP) return false;
   const period = /* @__PURE__ */ new Date();
   const periodStart = `${period.getUTCFullYear()}-${String(period.getUTCMonth() + 1).padStart(2, "0")}-01`;
-  const { data } = await admin.from("usage").select("llm_input_tokens, llm_output_tokens").eq("user_id", userId).eq("period", periodStart).maybeSingle();
+  const { data } = await admin.from("usage").select("llm_input_tokens, llm_output_tokens, tts_chars").eq("user_id", userId).eq("period", periodStart).maybeSingle();
   if (!data) return false;
-  const used = Number(data.llm_input_tokens ?? 0) + Number(data.llm_output_tokens ?? 0);
-  return used >= MONTHLY_TOKEN_CAP;
+  const tokens = Number(data.llm_input_tokens ?? 0) + Number(data.llm_output_tokens ?? 0);
+  const chars = Number(data.tts_chars ?? 0);
+  return MONTHLY_TOKEN_CAP > 0 && tokens >= MONTHLY_TOKEN_CAP || MONTHLY_TTS_CHARS_CAP > 0 && chars >= MONTHLY_TTS_CHARS_CAP;
 }
 
 // supabase/functions/_shared/full-circle.ts
@@ -1905,6 +1961,99 @@ ${advisorReply}`,
   }
 }
 
+// supabase/functions/_shared/tts.ts
+var ELEVEN_API = "https://api.elevenlabs.io/v1";
+var MAX_TTS_CHARS = 1200;
+var DEFAULT_TTS_MODEL = Deno.env.get("ELEVENLABS_MODEL") ?? "eleven_flash_v2_5";
+var OUTPUT_FORMAT = Deno.env.get("ELEVENLABS_OUTPUT_FORMAT") ?? "mp3_44100_64";
+function apiKey2() {
+  return Deno.env.get("ELEVENLABS_API_KEY") ?? null;
+}
+var voiceCache = null;
+async function loadVoices(key) {
+  if (voiceCache && Date.now() - voiceCache.at < 60 * 60 * 1e3) return voiceCache;
+  const res = await fetch(`${ELEVEN_API}/voices`, { headers: { "xi-api-key": key } });
+  if (!res.ok) throw new Error(`ElevenLabs voices ${res.status}`);
+  const data = await res.json();
+  const byName = /* @__PURE__ */ new Map();
+  for (const v of data.voices ?? []) byName.set(v.name.trim().toLowerCase(), v.voice_id);
+  voiceCache = { byName, first: data.voices?.[0]?.voice_id ?? null, at: Date.now() };
+  return voiceCache;
+}
+async function resolveVoiceId(key, settings) {
+  if (settings.voice_id && settings.voice_id !== "SET_IN_PHASE_4" && !settings.voice_name) return settings.voice_id;
+  const voices = await loadVoices(key);
+  const wanted = (settings.voice_name ?? "").trim().toLowerCase();
+  if (wanted && voices.byName.has(wanted)) return voices.byName.get(wanted);
+  if (settings.voice_id && settings.voice_id !== "SET_IN_PHASE_4") return settings.voice_id;
+  console.warn(`tts: voice "${settings.voice_name}" not found in account; using first available`);
+  return voices.first;
+}
+async function handleTts(admin, userId, body) {
+  const key = apiKey2();
+  if (!key) {
+    return new Response(JSON.stringify({ error: "tts_unconfigured" }), {
+      status: 503,
+      headers: { ...CORS_HEADERS, "content-type": "application/json" }
+    });
+  }
+  const advisorId = (body.advisor_id ?? "").trim();
+  const text = (body.text ?? "").replace(/\s+/g, " ").trim();
+  if (!advisorId || !text) return errorResponse("advisor_id and text are required");
+  if (text.length > MAX_TTS_CHARS) return errorResponse("text is too long for one request");
+  const persona = getPersona(advisorId);
+  if (!persona) return errorResponse(`Unknown advisor: ${advisorId}`, 404);
+  if (await overMonthlyCap(admin, userId)) return errorResponse(CAP_MESSAGE, 429);
+  let settings = { ...persona.tts_settings };
+  if (advisorId === "stranger" && body.stranger_archetype_id) {
+    const arch = getStrangerArchetype(body.stranger_archetype_id);
+    if (arch?.voice_name) settings = { ...settings, voice_name: arch.voice_name, voice_id: void 0 };
+    if (arch?.speaking_rate) settings.speaking_rate = arch.speaking_rate;
+  }
+  let voiceId;
+  try {
+    voiceId = await resolveVoiceId(key, settings);
+  } catch (err) {
+    console.error("tts voice lookup failed", err.message);
+    return errorResponse("Voice service unavailable", 502);
+  }
+  if (!voiceId) return errorResponse("No voices available on the ElevenLabs account", 502);
+  const speed = Math.min(Math.max(settings.speaking_rate ?? 1, 0.7), 1.2);
+  const upstream = await fetch(
+    `${ELEVEN_API}/text-to-speech/${voiceId}/stream?output_format=${encodeURIComponent(OUTPUT_FORMAT)}`,
+    {
+      method: "POST",
+      headers: { "xi-api-key": key, "content-type": "application/json", accept: "audio/mpeg" },
+      body: JSON.stringify({
+        text,
+        model_id: settings.model ?? DEFAULT_TTS_MODEL,
+        voice_settings: {
+          stability: settings.stability ?? 0.6,
+          similarity_boost: settings.similarity_boost ?? 0.75,
+          style: settings.style ?? 0,
+          use_speaker_boost: true,
+          speed
+        }
+      })
+    }
+  );
+  if (!upstream.ok || !upstream.body) {
+    const detail = await upstream.text().catch(() => "");
+    console.error("tts upstream failed", upstream.status, detail.slice(0, 300));
+    return errorResponse(upstream.status === 401 ? "Voice key rejected" : "Voice service error", 502);
+  }
+  admin.rpc("increment_usage", { p_user_id: userId, p_llm_input: 0, p_llm_output: 0, p_tts_chars: text.length, p_stt_seconds: 0 }).then(() => {
+  }, (e) => console.warn("tts usage", e.message));
+  return new Response(upstream.body, {
+    headers: {
+      ...CORS_HEADERS,
+      "content-type": "audio/mpeg",
+      "cache-control": "no-store",
+      "x-voice-id": voiceId
+    }
+  });
+}
+
 // supabase/functions/_shared/supabase.ts
 import { createClient } from "npm:@supabase/supabase-js@2";
 var SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -1985,6 +2134,9 @@ Deno.serve(async (req) => {
   }
   if (body.action === "full_circle") {
     return handleFullCircle(adminClient(), userId, body.session_id);
+  }
+  if (body.action === "tts") {
+    return handleTts(adminClient(), userId, body);
   }
   const advisorId = (body.advisor_id ?? "").trim();
   const message = (body.message ?? "").trim();
@@ -2075,7 +2227,7 @@ Deno.serve(async (req) => {
     send("session", {
       session_id: sessionId,
       advisor_id: advisorId,
-      stranger: strangerArchetype ? { name: strangerArchetype.name, setting: strangerArchetype.setting } : void 0
+      stranger: strangerArchetype ? { id: strangerArchetype.id, name: strangerArchetype.name, setting: strangerArchetype.setting } : void 0
     });
     let pending = "";
     let metaStarted = false;

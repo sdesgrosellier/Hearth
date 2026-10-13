@@ -45,11 +45,13 @@
   "memory_policy": "none_unless_familiar",
   "tts_settings": {
     "provider": "elevenlabs",
-    "voice_id": "PER_ARCHETYPE",
+    "voice_name": "Chris",
+    "voice_id": "SET_IN_PHASE_4",
     "model": "eleven_flash_v2_5",
     "speaking_rate": 1.0,
     "stability": 0.5,
-    "similarity_boost": 0.7,
+    "similarity_boost": 0.75,
+    "style": 0.3,
     "style_prompt": "Casual, direct, conversational. Set per archetype.",
     "pause_profile": "natural"
   }

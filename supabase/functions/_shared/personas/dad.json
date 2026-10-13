@@ -48,11 +48,13 @@
   "memory_policy": "full",
   "tts_settings": {
     "provider": "elevenlabs",
+    "voice_name": "Eric",
     "voice_id": "SET_IN_PHASE_4",
     "model": "eleven_flash_v2_5",
     "speaking_rate": 0.9,
-    "stability": 0.65,
-    "similarity_boost": 0.75,
+    "stability": 0.7,
+    "similarity_boost": 0.8,
+    "style": 0.1,
     "style_prompt": "Deep, calm, steady, reassuring. A father who thinks before he speaks.",
     "pause_profile": "deliberate"
   }

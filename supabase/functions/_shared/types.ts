@@ -26,11 +26,16 @@ export type Tone = "gentle" | "encouraging" | "serious" | "light";
 
 export interface TtsSettings {
   provider: string;
+  /** Explicit provider voice id; "SET_IN_PHASE_4" means "resolve voice_name instead". */
   voice_id: string;
+  /** Voice looked up by name in the ElevenLabs account (one-word edit to swap). */
+  voice_name?: string;
   model?: string;
   speaking_rate?: number;
   stability?: number;
   similarity_boost?: number;
+  /** ElevenLabs style exaggeration, 0–1. */
+  style?: number;
   style_prompt?: string;
   pause_profile?: string;
 }
@@ -75,6 +80,8 @@ export interface StrangerArchetype {
   background: string;
   style: string;
   voice_hint: string;
+  voice_name?: string;
+  speaking_rate?: number;
 }
 
 /** The user's stored settings (profiles.settings jsonb). Defaults live in the DB migration. */

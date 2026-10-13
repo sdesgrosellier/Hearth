@@ -50,11 +50,13 @@
   "memory_policy": "full",
   "tts_settings": {
     "provider": "elevenlabs",
+    "voice_name": "Brian",
     "voice_id": "SET_IN_PHASE_4",
     "model": "eleven_flash_v2_5",
     "speaking_rate": 0.82,
-    "stability": 0.7,
-    "similarity_boost": 0.75,
+    "stability": 0.6,
+    "similarity_boost": 0.8,
+    "style": 0.35,
     "style_prompt": "Elderly Black Southern pastor: deep, slow, rhythmic, warm, full of earned hope.",
     "pause_profile": "storyteller"
   }

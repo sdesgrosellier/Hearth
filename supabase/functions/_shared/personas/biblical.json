@@ -59,11 +59,13 @@
   "memory_policy": "full",
   "tts_settings": {
     "provider": "elevenlabs",
+    "voice_name": "George",
     "voice_id": "SET_IN_PHASE_4",
     "model": "eleven_flash_v2_5",
-    "speaking_rate": 0.88,
+    "speaking_rate": 0.9,
     "stability": 0.7,
-    "similarity_boost": 0.7,
+    "similarity_boost": 0.8,
+    "style": 0.15,
     "style_prompt": "Calm, resonant, reverent, unhurried. Verses read a little slower.",
     "pause_profile": "reverent"
   }

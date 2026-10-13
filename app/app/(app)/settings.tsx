@@ -95,6 +95,18 @@ export default function Settings() {
             onChange={(v) => setSetting("show_biblical", v)}
           />
           <Row
+            title="Voice"
+            detail="Show the microphone and let advisors speak their replies."
+            value={s?.voice_enabled !== false}
+            onChange={(v) => setSetting("voice_enabled", v)}
+          />
+          <Row
+            title="Hands-free conversation"
+            detail="After an advisor finishes speaking, start listening again automatically."
+            value={!!s?.voice_autolisten}
+            onChange={(v) => setSetting("voice_autolisten", v)}
+          />
+          <Row
             title="Familiar stranger"
             detail="The same stranger becomes a regular who remembers you."
             value={!!s?.familiar_stranger}

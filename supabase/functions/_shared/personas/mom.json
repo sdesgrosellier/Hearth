@@ -47,11 +47,13 @@
   "memory_policy": "full",
   "tts_settings": {
     "provider": "elevenlabs",
+    "voice_name": "Sarah",
     "voice_id": "SET_IN_PHASE_4",
     "model": "eleven_flash_v2_5",
     "speaking_rate": 0.95,
-    "stability": 0.55,
-    "similarity_boost": 0.75,
+    "stability": 0.6,
+    "similarity_boost": 0.8,
+    "style": 0.2,
     "style_prompt": "Warm, gentle, smiling, unhurried. A mother who is fully present.",
     "pause_profile": "natural"
   }

@@ -51,11 +51,13 @@
   "memory_policy": "full",
   "tts_settings": {
     "provider": "elevenlabs",
+    "voice_name": "Roger",
     "voice_id": "SET_IN_PHASE_4",
     "model": "eleven_flash_v2_5",
-    "speaking_rate": 0.85,
+    "speaking_rate": 0.86,
     "stability": 0.8,
-    "similarity_boost": 0.75,
+    "similarity_boost": 0.8,
+    "style": 0.1,
     "style_prompt": "Grave, measured, dignified eighteenth-century statesman. Slow, even, quietly warm.",
     "pause_profile": "deliberate"
   }

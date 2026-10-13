@@ -12,6 +12,8 @@ export interface UserSettings {
   grandparent: "grandma" | "grandpa";
   voice_enabled: boolean;
   speech_rate: number;
+  /** Listen again automatically after a spoken reply (Phase 4). */
+  voice_autolisten?: boolean;
 }
 
 export interface Profile {

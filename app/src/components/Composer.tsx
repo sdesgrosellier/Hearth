@@ -8,11 +8,14 @@ export function Composer({
   disabled,
   placeholder = "Say what's on your mind…",
   accent,
+  leading,
 }: {
   onSend: (text: string) => void;
   disabled?: boolean;
   placeholder?: string;
   accent: string;
+  /** Rendered before the input (the microphone button). */
+  leading?: React.ReactNode;
 }) {
   const t = useTheme();
   const [text, setText] = useState("");
@@ -37,6 +40,7 @@ export function Composer({
         backgroundColor: t.bg,
       }}
     >
+      {leading}
       <TextInput
         accessibilityLabel="Message"
         value={text}

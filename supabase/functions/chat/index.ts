@@ -3,6 +3,7 @@
 // Request (JSON):
 //   { advisor_id: string, message: string, session_id?: string, mode?: "text" | "voice" }
 //   or { action: "full_circle", session_id: string }  → 360° synthesis of the session
+//   or { action: "tts", advisor_id, text, stranger_archetype_id? } → audio/mpeg (Phase 4)
 //
 // Response: text/event-stream with events
 //   session  {session_id, advisor_id, stranger?: {name, setting}}
@@ -18,13 +19,16 @@ import { streamMessage } from "../_shared/anthropic.ts";
 import { handleFullCircle } from "../_shared/full-circle.ts";
 import { createSseStream, errorResponse, preflight } from "../_shared/http.ts";
 import { retrieveMemory, updateMemoryAfterTurn } from "../_shared/memory.ts";
+import { handleTts } from "../_shared/tts.ts";
 import { CAP_MESSAGE, overMonthlyCap } from "../_shared/usage.ts";
 import { adminClient, loadProfile, requireUserId } from "../_shared/supabase.ts";
 import { getPersona, getStrangerArchetype, pickStrangerArchetype } from "../_shared/personas/index.ts";
 import type { HistoryTurn, Mode, ResponseMeta, SafetyFlag, StrangerArchetype } from "../_shared/types.ts";
 
 interface ChatRequest {
-  action?: "full_circle";
+  action?: "full_circle" | "tts";
+  text?: string;
+  stranger_archetype_id?: string;
   advisor_id?: string;
   message?: string;
   session_id?: string;
@@ -69,6 +73,9 @@ Deno.serve(async (req: Request) => {
 
   if (body.action === "full_circle") {
     return handleFullCircle(adminClient(), userId, body.session_id);
+  }
+  if (body.action === "tts") {
+    return handleTts(adminClient(), userId, body);
   }
 
   const advisorId = (body.advisor_id ?? "").trim();
@@ -208,7 +215,7 @@ Deno.serve(async (req: Request) => {
       session_id: sessionId,
       advisor_id: advisorId,
       stranger: strangerArchetype
-        ? { name: strangerArchetype.name, setting: strangerArchetype.setting }
+        ? { id: strangerArchetype.id, name: strangerArchetype.name, setting: strangerArchetype.setting }
         : undefined,
     });
 

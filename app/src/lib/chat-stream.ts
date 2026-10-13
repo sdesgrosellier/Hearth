@@ -20,7 +20,7 @@ export interface ChatDone {
 export interface ChatSessionInfo {
   session_id: string;
   advisor_id: string;
-  stranger?: { name: string; setting: string };
+  stranger?: { id?: string; name: string; setting: string };
 }
 
 export interface ChatStreamHandlers {

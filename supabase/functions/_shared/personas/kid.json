@@ -50,11 +50,13 @@
   "memory_policy": "full",
   "tts_settings": {
     "provider": "elevenlabs",
+    "voice_name": "Jessica",
     "voice_id": "SET_IN_PHASE_4",
     "model": "eleven_flash_v2_5",
-    "speaking_rate": 1.05,
+    "speaking_rate": 1.08,
     "stability": 0.4,
     "similarity_boost": 0.7,
+    "style": 0.45,
     "style_prompt": "Bright, curious, warm ten-year-old. Quick and sincere, never bratty.",
     "pause_profile": "quick"
   }

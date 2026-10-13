@@ -24,6 +24,8 @@ import { crisisResourcesFor } from "@/constants/crisis";
 import { useAuth } from "@/lib/auth-context";
 import { streamChat } from "@/lib/chat-stream";
 import { supabase } from "@/lib/supabase";
+import { createListener, recognizerAvailable } from "@/lib/voice/stt";
+import { createSentenceSplitter, createSpeaker } from "@/lib/voice/tts";
 import { radius, spacing, useTheme } from "@/theme";
 
 let localId = 0;
@@ -50,6 +52,26 @@ export default function ChatScreen() {
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const cancelRef = useRef<(() => void) | null>(null);
   const autoSentRef = useRef(false);
+
+  // ---- Voice (Phase 4) ----
+  const voiceAllowed = profile?.settings.voice_enabled !== false;
+  const speakerRef = useRef(createSpeaker());
+  const listenerRef = useRef<ReturnType<typeof createListener> | null>(null);
+  const strangerIdRef = useRef<string | null>(null);
+  const [speakReplies, setSpeakReplies] = useState(false); // on after the first spoken question, or via 🔊
+  const [handsFree, setHandsFree] = useState(profile?.settings.voice_autolisten === true);
+  const [listening, setListening] = useState(false);
+  const [interim, setInterim] = useState("");
+  const [speaking, setSpeaking] = useState(false);
+  const canListen = voiceAllowed && recognizerAvailable();
+  const canSpeak = voiceAllowed && speakerRef.current.supported;
+  const resumeListenRef = useRef(false);
+
+  useEffect(() => speakerRef.current.onChange(setSpeaking), []);
+  useEffect(() => () => {
+    speakerRef.current.stop();
+    listenerRef.current?.abort();
+  }, []);
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -94,10 +116,15 @@ export default function ChatScreen() {
   }, [params.sessionId, scrollToEnd]);
 
   const send = useCallback(
-    async (text: string, toAdvisorId: AdvisorId = activeAdvisorId) => {
+    async (text: string, toAdvisorId: AdvisorId = activeAdvisorId, viaVoice = false) => {
       if (busy) return;
       setError(null);
       setBusy(true);
+      speakerRef.current.stop();
+      const speakThis = canSpeak && (speakReplies || viaVoice);
+      const splitter = createSentenceSplitter();
+      const say = (sentence: string) =>
+        speakerRef.current.speak(sentence, { advisorId: toAdvisorId, strangerArchetypeId: strangerIdRef.current });
       const userMsg: ChatMessage = { id: nextId(), role: "user", text };
       const advisorMsg: ChatMessage = {
         id: nextId(),
@@ -110,16 +137,20 @@ export default function ChatScreen() {
       scrollToEnd();
 
       cancelRef.current = await streamChat(
-        { advisorId: toAdvisorId, message: text, sessionId, mode: "text" },
+        { advisorId: toAdvisorId, message: text, sessionId, mode: viaVoice ? "voice" : "text" },
         {
           onSession: (info) => {
             setSessionId(info.session_id);
-            if (info.stranger) setStrangerIntro(`${info.stranger.name}, ${info.stranger.setting}`);
+            if (info.stranger) {
+              setStrangerIntro(`${info.stranger.name}, ${info.stranger.setting}`);
+              strangerIdRef.current = info.stranger.id ?? null;
+            }
           },
           onDelta: (chunk) => {
             setMessages((prev) =>
               prev.map((m) => (m.id === advisorMsg.id ? { ...m, text: m.text + chunk } : m)),
             );
+            if (speakThis) splitter.push(chunk).forEach(say);
             scrollToEnd();
           },
           onDone: (done) => {
@@ -130,6 +161,10 @@ export default function ChatScreen() {
                   : m,
               ),
             );
+            if (speakThis) {
+              splitter.flush().forEach(say);
+              resumeListenRef.current = viaVoice && handsFree && done.safety_flag !== "crisis";
+            }
             if (done.safety_flag === "crisis") setShowHelp(true);
             setBusy(false);
             cancelRef.current = null;
@@ -148,8 +183,52 @@ export default function ChatScreen() {
         },
       );
     },
-    [activeAdvisorId, busy, scrollToEnd, sessionId],
+    [activeAdvisorId, busy, canSpeak, handsFree, scrollToEnd, sessionId, speakReplies],
   );
+
+  // ---- Listening ----
+  const startListening = useCallback(async () => {
+    if (!canListen || busy) return;
+    speakerRef.current.stop(); // barge-in: the user wants to talk
+    setError(null);
+    setInterim("");
+    setSpeakReplies(true); // a spoken question gets a spoken answer
+    const listener = createListener({
+      onInterim: setInterim,
+      onFinal: (text) => {
+        setInterim("");
+        send(text, activeAdvisorId, true);
+      },
+      onEnd: () => {
+        setListening(false);
+        listenerRef.current = null;
+      },
+      onError: (message) => {
+        setError(message);
+        setListening(false);
+      },
+    });
+    listenerRef.current = listener;
+    setListening(true);
+    await listener.start();
+  }, [activeAdvisorId, busy, canListen, send]);
+
+  const stopListening = useCallback(() => {
+    listenerRef.current?.stop();
+  }, []);
+
+  // Hands-free: when the advisor finishes speaking after a spoken question, listen again.
+  useEffect(() => {
+    if (!speaking && !busy && resumeListenRef.current) {
+      resumeListenRef.current = false;
+      startListening();
+    }
+  }, [busy, speaking, startListening]);
+
+  const onMicPress = () => {
+    if (listening) stopListening();
+    else startListening();
+  };
 
   // The question currently on the table: the most recent thing the user said.
   const lastQuestion = [...messages].reverse().find((m) => m.role === "user")?.text ?? null;
@@ -248,6 +327,21 @@ export default function ChatScreen() {
             <Heading>{advisor.name}</Heading>
             <Small>{strangerIntro ?? advisor.presence}</Small>
           </View>
+          {canSpeak ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={speakReplies ? "Stop reading replies aloud" : "Read replies aloud"}
+              accessibilityState={{ selected: speakReplies }}
+              onPress={() => {
+                if (speakReplies) speakerRef.current.stop();
+                setSpeakReplies((v) => !v);
+              }}
+              hitSlop={8}
+              style={{ paddingVertical: 6, paddingHorizontal: 8, borderRadius: radius.pill, backgroundColor: speakReplies ? advisor.accent : t.cardAlt }}
+            >
+              <Text style={{ fontSize: 16 }}>{speakReplies ? "🔊" : "🔈"}</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="I need help now"
@@ -391,7 +485,60 @@ export default function ChatScreen() {
           </View>
         ) : null}
 
-        <Composer accent={advisor.accent} onSend={(text) => send(text)} disabled={busy} placeholder={`Talk to ${advisor.name}…`} />
+        {listening || interim ? (
+          <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: t.cardAlt, flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+            <Text style={{ fontSize: 16 }}>🎙️</Text>
+            <Text style={{ flex: 1, fontSize: 16, lineHeight: 22, color: interim ? t.text : t.muted, fontStyle: interim ? "normal" : "italic" }} numberOfLines={3}>
+              {interim || "Listening… say what's on your mind, then pause."}
+            </Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Stop listening" onPress={stopListening} hitSlop={8}>
+              <Small style={{ color: t.primary, fontWeight: "700" }}>Done</Small>
+            </Pressable>
+          </View>
+        ) : speaking ? (
+          <View style={{ paddingHorizontal: spacing.lg, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+            <Small>{advisor.name} is speaking{speakerRef.current.usingFallback() ? " (device voice until the ElevenLabs key is set)" : ""}…</Small>
+            <Pressable accessibilityRole="button" accessibilityLabel="Stop speaking" onPress={() => speakerRef.current.stop()} hitSlop={8}>
+              <Small style={{ color: t.primary, fontWeight: "700" }}>Stop</Small>
+            </Pressable>
+            {canListen ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Hands-free conversation" onPress={() => setHandsFree((v) => !v)} hitSlop={8}>
+                <Small style={{ color: handsFree ? t.primary : t.muted, fontWeight: "600" }}>{handsFree ? "Hands-free: on" : "Hands-free: off"}</Small>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+
+        <Composer
+          accent={advisor.accent}
+          onSend={(text) => send(text)}
+          disabled={busy}
+          placeholder={canListen ? `Talk or type to ${advisor.name}…` : `Talk to ${advisor.name}…`}
+          leading={
+            canListen ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={listening ? "Stop listening" : "Speak your question"}
+                accessibilityState={{ selected: listening }}
+                disabled={busy}
+                onPress={onMicPress}
+                style={({ pressed }) => ({
+                  width: 46,
+                  height: 46,
+                  borderRadius: 23,
+                  backgroundColor: listening ? t.danger : t.cardAlt,
+                  borderWidth: 1.5,
+                  borderColor: listening ? t.danger : advisor.accent,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed || busy ? 0.7 : 1,
+                })}
+              >
+                <Text style={{ fontSize: 20 }}>{listening ? "■" : "🎙️"}</Text>
+              </Pressable>
+            ) : undefined
+          }
+        />
       </KeyboardAvoidingView>
     </Screen>
   );
