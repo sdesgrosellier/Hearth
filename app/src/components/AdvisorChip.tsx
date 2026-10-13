@@ -8,10 +8,13 @@ export function AdvisorChip({
   advisor,
   selected,
   onPress,
+  compact = false,
 }: {
   advisor: AdvisorMeta;
   selected?: boolean;
   onPress: () => void;
+  /** Smaller chip for horizontal switcher rows. */
+  compact?: boolean;
 }) {
   const t = useTheme();
   return (
@@ -24,8 +27,8 @@ export function AdvisorChip({
         flexDirection: "row",
         alignItems: "center",
         gap: spacing.sm,
-        paddingVertical: 10,
-        paddingHorizontal: spacing.lg,
+        paddingVertical: compact ? 6 : 10,
+        paddingHorizontal: compact ? spacing.md : spacing.lg,
         borderRadius: radius.pill,
         backgroundColor: selected ? advisor.accent : t.card,
         borderWidth: 1.5,
@@ -33,9 +36,9 @@ export function AdvisorChip({
         opacity: pressed ? 0.8 : 1,
       })}
     >
-      <Text style={{ fontSize: 18 }}>{advisor.emoji}</Text>
+      <Text style={{ fontSize: compact ? 16 : 18 }}>{advisor.emoji}</Text>
       <View>
-        <Text style={{ color: selected ? "#fff" : t.text, fontWeight: "600", fontSize: 15 }}>{advisor.name}</Text>
+        <Text style={{ color: selected ? "#fff" : t.text, fontWeight: "600", fontSize: compact ? 14 : 15 }}>{advisor.name}</Text>
       </View>
     </Pressable>
   );

@@ -62,11 +62,19 @@ export default function Home() {
     setRefreshing(false);
   };
 
-  const ask = () => {
+  const ask = (advisorId: AdvisorId = selected) => {
     const q = question.trim();
-    router.push({ pathname: "/(app)/chat/[advisorId]", params: { advisorId: selected, q } });
+    router.push({ pathname: "/(app)/chat/[advisorId]", params: { advisorId, q } });
     setQuestion("");
   };
+
+  // Ask first, then pick: with a question typed, tapping a name sends it to them
+  // immediately. With nothing typed, tapping just selects who to "Just talk" with.
+  const onChip = (advisorId: AdvisorId) => {
+    setSelected(advisorId);
+    if (question.trim()) ask(advisorId);
+  };
+  const hasQuestion = question.trim().length > 0;
 
   const greeting = profile?.preferred_address || profile?.display_name;
 
@@ -116,11 +124,11 @@ export default function Home() {
                 style={{ minHeight: 84, color: t.text, fontSize: 17, lineHeight: 24, textAlignVertical: "top" }}
               />
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <Small>Asking {getAdvisor(selected).name}</Small>
+                <Small>{hasQuestion ? "Now tap who you want to hear from ↓" : `Just talk with ${getAdvisor(selected).name}`}</Small>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Ask ${getAdvisor(selected).name}`}
-                  onPress={ask}
+                  onPress={() => ask()}
                   style={({ pressed }) => ({
                     backgroundColor: getAdvisor(selected).accent,
                     paddingVertical: 10,
@@ -135,18 +143,18 @@ export default function Home() {
             </View>
 
             <View style={{ gap: spacing.md }}>
-              <Heading>Who do you want to hear from?</Heading>
+              <Heading>{hasQuestion ? "Who do you want to hear from? Tap a name." : "Who do you want to hear from?"}</Heading>
               {groupAdvisors(visibleAdvisors).map((group) => (
                 <View key={group.category} style={{ gap: spacing.sm }}>
                   <Small style={{ textTransform: "uppercase", letterSpacing: 0.8, fontSize: 12 }}>{group.label}</Small>
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
                     {group.advisors.map((a) => (
-                      <AdvisorChip key={a.id} advisor={a} selected={selected === a.id} onPress={() => setSelected(a.id)} />
+                      <AdvisorChip key={a.id} advisor={a} selected={selected === a.id} onPress={() => onChip(a.id)} />
                     ))}
                   </View>
                 </View>
               ))}
-              <Small>{getAdvisor(selected).tagline}</Small>
+              <Small>{getAdvisor(selected).tagline} Once you have an answer, you can hand the same question to anyone else with one tap.</Small>
             </View>
 
             <Heading style={{ marginTop: spacing.sm }}>Recent conversations</Heading>

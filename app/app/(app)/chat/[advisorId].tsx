@@ -9,15 +9,17 @@ import {
   Linking,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
+import { AdvisorChip } from "@/components/AdvisorChip";
 import { Composer } from "@/components/Composer";
 import { MessageBubble, type ChatMessage } from "@/components/MessageBubble";
 import { Avatar, Body, Card, Heading, Screen, Small } from "@/components/ui";
-import { getAdvisor } from "@/config/advisors";
+import { ADVISORS, getAdvisor, type AdvisorId } from "@/config/advisors";
 import { crisisResourcesFor } from "@/constants/crisis";
 import { useAuth } from "@/lib/auth-context";
 import { streamChat } from "@/lib/chat-stream";
@@ -32,7 +34,10 @@ export default function ChatScreen() {
   const router = useRouter();
   const { profile } = useAuth();
   const params = useLocalSearchParams<{ advisorId: string; q?: string; sessionId?: string }>();
-  const advisor = getAdvisor(params.advisorId);
+  // The advisor currently answering. Starts from the route, changes when the user taps
+  // another advisor in the switcher (same session, same question).
+  const [activeAdvisorId, setActiveAdvisorId] = useState<AdvisorId>(getAdvisor(params.advisorId).id);
+  const advisor = getAdvisor(activeAdvisorId);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(params.sessionId ?? null);
@@ -57,7 +62,7 @@ export default function ChatScreen() {
     (async () => {
       const { data } = await supabase
         .from("messages")
-        .select("id, role, content, display_content, safety_flag")
+        .select("id, role, content, display_content, safety_flag, advisor_id")
         .eq("session_id", params.sessionId)
         .in("role", ["user", "advisor"])
         .order("created_at", { ascending: true })
@@ -69,6 +74,7 @@ export default function ChatScreen() {
           role: m.role as "user" | "advisor",
           text: (m.display_content as string) ?? (m.content as string),
           safety_flag: m.safety_flag as ChatMessage["safety_flag"],
+          advisor_id: (m.advisor_id as string | null) ?? undefined,
         })),
       );
       setLoadingHistory(false);
@@ -80,17 +86,23 @@ export default function ChatScreen() {
   }, [params.sessionId, scrollToEnd]);
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, toAdvisorId: AdvisorId = activeAdvisorId) => {
       if (busy) return;
       setError(null);
       setBusy(true);
       const userMsg: ChatMessage = { id: nextId(), role: "user", text };
-      const advisorMsg: ChatMessage = { id: nextId(), role: "advisor", text: "", pending: true };
+      const advisorMsg: ChatMessage = {
+        id: nextId(),
+        role: "advisor",
+        text: "",
+        pending: true,
+        advisor_id: toAdvisorId,
+      };
       setMessages((prev) => [...prev, userMsg, advisorMsg]);
       scrollToEnd();
 
       cancelRef.current = await streamChat(
-        { advisorId: advisor.id, message: text, sessionId, mode: "text" },
+        { advisorId: toAdvisorId, message: text, sessionId, mode: "text" },
         {
           onSession: (info) => {
             setSessionId(info.session_id);
@@ -128,8 +140,25 @@ export default function ChatScreen() {
         },
       );
     },
-    [advisor.id, busy, scrollToEnd, sessionId],
+    [activeAdvisorId, busy, scrollToEnd, sessionId],
   );
+
+  // The question currently on the table: the most recent thing the user said.
+  const lastQuestion = [...messages].reverse().find((m) => m.role === "user")?.text ?? null;
+  const hasAnswer = messages.some((m) => m.role === "advisor" && !m.pending && m.text);
+
+  // One tap: the same question goes to another advisor in this same conversation.
+  const askAnother = useCallback(
+    (id: AdvisorId) => {
+      if (busy || id === activeAdvisorId) return;
+      setActiveAdvisorId(id);
+      setStrangerIntro(null);
+      if (lastQuestion) send(lastQuestion, id);
+    },
+    [activeAdvisorId, busy, lastQuestion, send],
+  );
+
+  const switchable = ADVISORS.filter((a) => (a.id === "biblical" ? profile?.settings.show_biblical !== false : true));
 
   // Auto-send the question typed on the Home screen.
   useEffect(() => {
@@ -143,6 +172,7 @@ export default function ChatScreen() {
   useEffect(() => () => cancelRef.current?.(), []);
 
   const resources = crisisResourcesFor(profile?.locale ?? "en-US");
+  const multiAdvisor = new Set(messages.filter((m) => m.role === "advisor").map((m) => m.advisor_id ?? advisor.id)).size > 1;
 
   return (
     <Screen edges={["top", "left", "right"]}>
@@ -201,7 +231,28 @@ export default function ChatScreen() {
           ref={listRef}
           data={messages}
           keyExtractor={(m) => m.id}
-          renderItem={({ item }) => <MessageBubble message={item} advisor={advisor} />}
+          renderItem={({ item, index }) => {
+            // A repeated question (hand-off to another advisor) renders as a compact marker.
+            if (item.role === "user" && index > 0) {
+              const prevUser = messages.slice(0, index).reverse().find((m) => m.role === "user");
+              const next = messages[index + 1];
+              if (prevUser && prevUser.text === item.text && next?.role === "advisor") {
+                const to = getAdvisor(next.advisor_id ?? advisor.id);
+                return (
+                  <View style={{ alignItems: "center", marginVertical: 8 }}>
+                    <Small>Same question → {to.name}</Small>
+                  </View>
+                );
+              }
+            }
+            return (
+              <MessageBubble
+                message={item}
+                advisor={getAdvisor(item.advisor_id ?? advisor.id)}
+                showName={multiAdvisor}
+              />
+            );
+          }}
           contentContainerStyle={{ paddingVertical: spacing.md, flexGrow: 1 }}
           onContentSizeChange={scrollToEnd}
           keyboardShouldPersistTaps="handled"
@@ -227,7 +278,31 @@ export default function ChatScreen() {
           </View>
         ) : null}
 
-        <Composer accent={advisor.accent} onSend={send} disabled={busy} placeholder={`Talk to ${advisor.name}…`} />
+        {hasAnswer && lastQuestion ? (
+          <View style={{ gap: 6, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line }}>
+            <Small style={{ paddingHorizontal: spacing.lg }}>
+              {busy ? `${advisor.name} is answering…` : "Hear from someone else on this — tap a name:"}
+            </Small>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: 4 }}
+            >
+              {switchable.map((a) => (
+                <AdvisorChip
+                  key={a.id}
+                  advisor={a}
+                  selected={a.id === advisor.id}
+                  compact
+                  onPress={() => askAnother(a.id)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
+        <Composer accent={advisor.accent} onSend={(text) => send(text)} disabled={busy} placeholder={`Talk to ${advisor.name}…`} />
       </KeyboardAvoidingView>
     </Screen>
   );

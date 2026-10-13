@@ -12,9 +12,20 @@ export interface ChatMessage {
   text: string;
   pending?: boolean;
   safety_flag?: "none" | "elevated" | "crisis";
+  /** Which advisor said it (advisor messages only). */
+  advisor_id?: string;
 }
 
-export function MessageBubble({ message, advisor }: { message: ChatMessage; advisor: AdvisorMeta }) {
+export function MessageBubble({
+  message,
+  advisor,
+  showName = false,
+}: {
+  message: ChatMessage;
+  advisor: AdvisorMeta;
+  /** Label the bubble with the advisor's name (used when several advisors share a thread). */
+  showName?: boolean;
+}) {
   const t = useTheme();
   const mine = message.role === "user";
 
@@ -50,6 +61,9 @@ export function MessageBubble({ message, advisor }: { message: ChatMessage; advi
           },
         ]}
       >
+        {showName ? (
+          <Text style={{ color: advisor.accent, fontWeight: "700", fontSize: 13, marginBottom: 4 }}>{advisor.name}</Text>
+        ) : null}
         {message.text || !message.pending ? (
           <Text style={[typeScale.body, { color: t.text }]}>
             {message.text}
