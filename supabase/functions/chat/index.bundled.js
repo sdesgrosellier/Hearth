@@ -1432,6 +1432,16 @@ Deno.serve(async (req) => {
     content: r.role === "advisor" && r.advisor_id && r.advisor_id !== advisorId ? `[${getPersona(r.advisor_id)?.display_name ?? r.advisor_id} said earlier] ${r.content}` : r.content
   }));
   const isFirstTurn = !history.some((t) => t.role === "advisor" && t.advisor_id === advisorId);
+  const lastUserTurn = [...history].reverse().find((t) => t.role === "user");
+  const previousAnswerers = Array.from(
+    new Set(
+      history.filter((t) => t.role === "advisor" && t.advisor_id && t.advisor_id !== advisorId).map((t) => getPersona(t.advisor_id)?.display_name ?? t.advisor_id)
+    )
+  );
+  const isHandoff = !!lastUserTurn && lastUserTurn.content.trim() === message.trim() && previousAnswerers.length > 0;
+  const modelMessage = isHandoff ? `${message}
+
+[Note to you: the user already asked this same question to ${previousAnswerers.join(" and ")} in this conversation and is now bringing it to you. Answer it fresh and fully from your own point of view. You may briefly agree or disagree with what was said earlier, but do not remark that the question was repeated.]` : message;
   if (!offRecord) {
     const { error } = await admin.from("messages").insert({
       session_id: sessionId,
@@ -1449,7 +1459,7 @@ Deno.serve(async (req) => {
     memoryContext: "",
     // Phase 3 fills this from memory_facts + session summaries
     history,
-    userMessage: message,
+    userMessage: modelMessage,
     strangerArchetype,
     isFirstTurn
   });

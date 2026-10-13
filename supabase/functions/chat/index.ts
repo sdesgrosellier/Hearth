@@ -146,6 +146,23 @@ Deno.serve(async (req: Request) => {
     }));
   const isFirstTurn = !history.some((t) => t.role === "advisor" && t.advisor_id === advisorId);
 
+  // Hand-off: the user already asked this exact question to another advisor in this
+  // session and is now bringing it to this one (one-tap advisor switch in the app).
+  // Tell the model so it answers fresh instead of treating it as a repeated question.
+  const lastUserTurn = [...history].reverse().find((t) => t.role === "user");
+  const previousAnswerers = Array.from(
+    new Set(
+      history
+        .filter((t) => t.role === "advisor" && t.advisor_id && t.advisor_id !== advisorId)
+        .map((t) => getPersona(t.advisor_id as string)?.display_name ?? (t.advisor_id as string)),
+    ),
+  );
+  const isHandoff =
+    !!lastUserTurn && lastUserTurn.content.trim() === message.trim() && previousAnswerers.length > 0;
+  const modelMessage = isHandoff
+    ? `${message}\n\n[Note to you: the user already asked this same question to ${previousAnswerers.join(" and ")} in this conversation and is now bringing it to you. Answer it fresh and fully from your own point of view. You may briefly agree or disagree with what was said earlier, but do not remark that the question was repeated.]`
+    : message;
+
   // ---- Persist the user message ----------------------------------------------
   if (!offRecord) {
     const { error } = await admin.from("messages").insert({
@@ -165,7 +182,7 @@ Deno.serve(async (req: Request) => {
     profile,
     memoryContext: "", // Phase 3 fills this from memory_facts + session summaries
     history,
-    userMessage: message,
+    userMessage: modelMessage,
     strangerArchetype,
     isFirstTurn,
   });
