@@ -1,15 +1,18 @@
-# Hearth
+# Sounding Board
 
-Advice from the voices you trust: Mom, Dad, Grandma or Grandpa, a Random Stranger, or Biblical Counsel. Every advisor is an AI character, honest about it, and puts your safety first.
+Bounce any personal question off a whole cast of advisors and hear it answered from very different places: **Family** (Mom, Dad, Grandma, Grandpa), **Fresh perspectives** (a Random Stranger, a ten-year-old Kid, an alien Visitor), **Voices from history** (Julius Caesar, Napoleon, George Washington, Abraham Lincoln, and an Elder who marched in the civil rights movement), and **Faith** (Biblical Counsel). Every advisor is an AI character, honest about it, and puts your safety first. Historical advisors are openly-labeled dramatizations that speak in the person's spirit, never invent quotations, and own the real person's failures.
 
-**Status:** Phase 1 (Foundation) complete. See `docs/ARCHITECTURE.md` for the stack decision, cost model, diagram, and risks, and `docs/PHASE-1-TEST-CHECKLIST.md` for how to verify this phase.
+Formerly "Hearth" (working title).
+
+**Live web beta:** https://sdesgrosellier.github.io/sounding-board/ — deployed by GitHub Actions on every push to `main`.
+
+**Status:** Phase 1 (Foundation) complete and live. See `docs/ARCHITECTURE.md` for the stack decision, cost model, diagram, and risks, and `docs/PHASE-1-TEST-CHECKLIST.md` for how to verify this phase.
 
 ```
-hearth/
+sounding-board/
 ├── app/                      Expo (React Native + TypeScript) mobile app
 │   ├── app/                  expo-router screens
-│   │   ├── (auth)/sign-in    email one-time-code sign-in
-│   │   ├── onboarding        AI disclosure, name, grandparent, 18+, memory
+│   │   └── src/screens       sign-in (email + password) and onboarding, rendered by the auth gate
 │   │   └── (app)/            home, chat/[advisorId], settings
 │   └── src/                  components, lib (supabase, auth, streaming), theme, config
 ├── supabase/
@@ -18,9 +21,19 @@ hearth/
 │   └── functions/
 │       ├── chat/             streaming single-advisor chat (SSE)
 │       └── _shared/          safety layer, prompt assembler, Claude client,
-│                             persona JSON (6 advisors + 14 stranger archetypes)
+│                             persona JSON (13 advisors + 14 stranger archetypes)
+├── scripts/                  bundle-function.mjs (single-file Edge Function build), decorate-web-shell.mjs
+├── .github/workflows/        deploy-web.yml → GitHub Pages
 └── docs/
 ```
+
+---
+
+## Adding an advisor
+
+1. Add `supabase/functions/_shared/personas/<id>.json` (copy an existing one; set `category` to `family`, `fresh`, `history`, or `faith`, and `"historical": true` for a real person).
+2. Register it in `supabase/functions/_shared/personas/index.ts` and add the same id to `app/src/config/advisors.ts` (name, emoji, accent, tagline, presence, optional `disclosure`).
+3. `node scripts/bundle-function.mjs`, redeploy the `chat` function, push to `main`.
 
 ---
 
@@ -32,7 +45,7 @@ hearth/
    - Node.js 22+ and npm
    - Supabase CLI: `npm install -g supabase` (or `brew install supabase/tap/supabase`)
    - Expo Go on your phone (App Store / Play Store) for Phase 1–3 testing. Phase 4 (voice) needs a dev build.
-4. **Email for sign-in codes** — the Supabase project sends one-time codes with its built-in SMTP for low volume. For a real beta, add a custom SMTP provider in Authentication → SMTP Settings.
+4. **Sign-in email** — the beta uses email + password with "Confirm email" turned off. Before a public launch, add a custom SMTP provider in Authentication → SMTP Settings and turn confirmation back on.
 
 Nothing else is needed for Phase 1. ElevenLabs/Deepgram accounts come in Phase 4.
 
@@ -43,14 +56,14 @@ Nothing else is needed for Phase 1. ElevenLabs/Deepgram accounts come in Phase 4
 ### 1. Database
 
 ```bash
-cd hearth
+cd sounding-board
 supabase login
 supabase link --project-ref YOUR_PROJECT_REF
 supabase db push                 # applies supabase/migrations/*
 psql "$(supabase db url)" -f supabase/seed.sql   # optional: persona rows for admin browsing
 ```
 
-Or run everything locally: `supabase start` (Docker), which applies migrations + seed automatically and prints local keys. Sign-in codes for local dev show up in Inbucket at http://localhost:54324.
+Or run everything locally: `supabase start` (Docker), which applies migrations + seed automatically and prints local keys. Auth emails for local dev show up in Inbucket at http://localhost:54324.
 
 ### 2. Edge Function
 
@@ -93,7 +106,7 @@ Never put the Anthropic key or the service-role key in the app.
 
 ## How it works (Phase 1)
 
-1. The app signs in with an email one-time code and reads its `profiles` row (created by a DB trigger).
+1. The app signs in with email + password and reads its `profiles` row (created by a DB trigger).
 2. Home lets the user pick one advisor and type a question; Chat opens and calls `POST /functions/v1/chat` with the user's JWT.
 3. The `chat` function verifies the user, loads or creates a `sessions` row, pulls the last 20 turns, and assembles the prompt from nine blocks: global safety layer → app context → persona JSON → mode → profile/preferences → memory (empty until Phase 3) → date → history → message.
 4. Claude Sonnet 5.5 streams the reply. The function forwards text as SSE `delta` events and withholds the trailing `<<<META>>>` JSON (headline, tone, follow-up, scripture refs, candidate facts, safety flag).
@@ -107,7 +120,7 @@ The Random Stranger gets one of 14 archetypes per session (stored in `sessions.m
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Scaffold, auth, schema + RLS, personas, prompt assembler, text chat | ✅ |
+| 1 | Scaffold, auth, schema + RLS, 13 personas, prompt assembler, text chat, web deploy | ✅ |
 | 2 | Advice Panel: parallel advisors, streaming cards, synthesis, feedback, history | next |
 | 3 | Memory: summaries, fact extraction, embeddings, retrieval, My Story, follow-ups | |
 | 4 | Voice: per-persona TTS, streaming STT, barge-in, call screen | |

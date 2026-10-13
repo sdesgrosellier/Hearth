@@ -5,7 +5,7 @@ Work through this after `supabase db push`, `supabase functions deploy chat`, an
 ## A. Automated (run from the repo)
 
 - [ ] `cd app && npm run typecheck` prints nothing (strict TypeScript, 0 errors).
-- [ ] `cd app && EXPO_OFFLINE=1 npx expo export --platform web --output-dir /tmp/hearth-web` completes (Metro resolves every route and import).
+- [ ] `cd app && EXPO_OFFLINE=1 npx expo export --platform web --output-dir /tmp/sounding-board-web` completes (Metro resolves every route and import).
 - [ ] `cd supabase/functions && deno check chat/index.ts` passes (requires Deno; the Supabase CLI bundles it).
 - [ ] `supabase db push` applies `20261013000000_init.sql` with no errors; `supabase db lint` reports none.
 

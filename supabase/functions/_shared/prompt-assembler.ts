@@ -57,6 +57,11 @@ export function renderPersonaBlock(
 ): string {
   const lines: string[] = [];
   lines.push(`ADVISOR: ${persona.display_name} (${persona.age_range})`);
+  if (persona.historical) {
+    lines.push(
+      "This advisor is an openly-labeled dramatization of a real historical person. The HISTORICAL FIGURES rules above apply: speak in their spirit, never invent quotations, be honest about their failures, and keep modern standards of safety and dignity.",
+    );
+  }
   lines.push(`WHO YOU ARE: ${persona.core_identity}`);
   lines.push(`WHAT YOU VALUE: ${persona.values.join("; ")}.`);
   lines.push(`HOW YOU SPEAK: ${persona.speech_style}`);

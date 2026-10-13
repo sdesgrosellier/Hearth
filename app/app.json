@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "Hearth",
-    "slug": "hearth",
+    "name": "Sounding Board",
+    "slug": "sounding-board",
     "version": "0.1.0",
-    "scheme": "hearth",
+    "scheme": "soundingboard",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.hearth.app",
+      "bundleIdentifier": "com.soundingboard.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "So you can talk with your advisors out loud.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.hearth.app",
+      "package": "com.soundingboard.app",
       "adaptiveIcon": {
         "backgroundColor": "#F6EFE6",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -44,7 +44,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "baseUrl": "/Hearth"
+      "baseUrl": "/sounding-board"
     }
   }
 }

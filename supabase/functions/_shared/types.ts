@@ -1,4 +1,4 @@
-// Shared types for Hearth Edge Functions.
+// Shared types for Sounding Board Edge Functions.
 
 export type AdvisorId =
   | "mom"
@@ -7,7 +7,17 @@ export type AdvisorId =
   | "grandpa"
   | "stranger"
   | "biblical"
+  | "kid"
+  | "alien"
+  | "caesar"
+  | "napoleon"
+  | "washington"
+  | "lincoln"
+  | "elder"
   | (string & {}); // custom advisors (Section 2.3) arrive by config
+
+/** Home-screen grouping. */
+export type AdvisorCategory = "family" | "fresh" | "history" | "faith";
 
 export type Mode = "text" | "voice" | "panel";
 
@@ -29,6 +39,9 @@ export interface PersonaConfig {
   id: AdvisorId;
   display_name: string;
   short_label: string;
+  category?: AdvisorCategory;
+  /** True for openly-labeled dramatizations of real people (adds the HISTORICAL FIGURES note). */
+  historical?: boolean;
   avatar: { emoji: string; accent: string; illustration: string };
   age_range: string;
   voice_profile: string;

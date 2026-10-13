@@ -81,7 +81,7 @@ export default function SignInScreen() {
         >
           <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
             <Text style={{ fontSize: 44 }}>🔥</Text>
-            <Title>Hearth</Title>
+            <Title>Sounding Board</Title>
             <Body muted>Advice from the voices you trust. Mom, Dad, a grandparent, a stranger, or Scripture.</Body>
           </View>
 
@@ -161,7 +161,7 @@ export default function SignInScreen() {
             style={{ alignSelf: "center", padding: spacing.sm }}
           >
             <Small>
-              {mode === "signin" ? "New to Hearth? " : "Already have an account? "}
+              {mode === "signin" ? "New to Sounding Board? " : "Already have an account? "}
               <Text style={{ color: t.primary, fontWeight: "600" }}>
                 {mode === "signin" ? "Create one" : "Sign in"}
               </Text>
@@ -169,7 +169,7 @@ export default function SignInScreen() {
           </Pressable>
 
           <Small style={{ marginTop: spacing.xl }}>
-            Hearth's advisors are AI characters, not real people and not licensed professionals. For 18+.
+            Sounding Board's advisors are AI characters, not real people and not licensed professionals. For 18+.
             If you're in crisis, call or text 988 (US) or your local emergency number.
           </Small>
         </ScrollView>

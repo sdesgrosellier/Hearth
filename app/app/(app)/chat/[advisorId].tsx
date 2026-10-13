@@ -213,6 +213,9 @@ export default function ChatScreen() {
                 <Body muted style={{ textAlign: "center" }}>
                   {advisor.tagline} Say what's going on, in your own words.
                 </Body>
+                {advisor.disclosure ? (
+                  <Small style={{ textAlign: "center", marginTop: spacing.sm }}>{advisor.disclosure}</Small>
+                ) : null}
               </View>
             )
           }

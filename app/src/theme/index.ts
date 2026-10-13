@@ -1,4 +1,4 @@
-// Hearth visual language: warm neutrals, soft light, rounded shapes.
+// Sounding Board visual language: warm neutrals, soft light, rounded shapes.
 // Each advisor has a distinct accent (see config/advisors.ts).
 
 import { useColorScheme } from "react-native";

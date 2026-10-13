@@ -8,7 +8,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View 
 
 import { AdvisorChip } from "@/components/AdvisorChip";
 import { Avatar, Body, Heading, Screen, Small } from "@/components/ui";
-import { ADVISORS, getAdvisor, type AdvisorId } from "@/config/advisors";
+import { ADVISORS, getAdvisor, groupAdvisors, type AdvisorId } from "@/config/advisors";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { radius, spacing, useTheme } from "@/theme";
@@ -134,13 +134,18 @@ export default function Home() {
               </View>
             </View>
 
-            <View style={{ gap: spacing.sm }}>
+            <View style={{ gap: spacing.md }}>
               <Heading>Who do you want to hear from?</Heading>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
-                {visibleAdvisors.map((a) => (
-                  <AdvisorChip key={a.id} advisor={a} selected={selected === a.id} onPress={() => setSelected(a.id)} />
-                ))}
-              </View>
+              {groupAdvisors(visibleAdvisors).map((group) => (
+                <View key={group.category} style={{ gap: spacing.sm }}>
+                  <Small style={{ textTransform: "uppercase", letterSpacing: 0.8, fontSize: 12 }}>{group.label}</Small>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
+                    {group.advisors.map((a) => (
+                      <AdvisorChip key={a.id} advisor={a} selected={selected === a.id} onPress={() => setSelected(a.id)} />
+                    ))}
+                  </View>
+                </View>
+              ))}
               <Small>{getAdvisor(selected).tagline}</Small>
             </View>
 

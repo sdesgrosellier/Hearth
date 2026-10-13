@@ -1,4 +1,4 @@
-// Small, shared UI primitives in the Hearth style.
+// Small, shared UI primitives in the Sounding Board style.
 
 import React from "react";
 import {

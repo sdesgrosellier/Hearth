@@ -1,4 +1,4 @@
-# Hearth — Kickoff: Summary, Stack, Costs, Architecture, Risks
+# Sounding Board (formerly Hearth) — Kickoff: Summary, Stack, Costs, Architecture, Risks
 
 _Prepared 2026-10-13 against the Master Build Prompt (Section 18). Prices were checked against provider pricing pages and third-party price trackers on this date; re-verify before launch._
 
@@ -6,7 +6,7 @@ _Prepared 2026-10-13 against the Master Build Prompt (Section 18). Prices were c
 
 ## 1. Product summary
 
-Hearth is a mobile app where an adult can ask any personal question and hear it answered by a cast of AI advisor archetypes: a Mom, a Dad, a Grandma or Grandpa, a Random Stranger with no stake in the outcome, and Biblical Counsel grounded in Scripture. The signature feature, "Ask the Table," answers one question with every selected advisor in parallel and shows where they agree and differ. Each advisor can then be talked to directly, by text or in a live, interruptible voice conversation in an age- and tone-appropriate voice. Hearth remembers past questions, advice, and outcomes, so later advice builds on the person's real life, while giving them full visibility and control over what is stored. Every advisor is honest about being an AI, never impersonates the user's real family, and steps out of character the moment safety requires it.
+Sounding Board is a mobile app where an adult can ask any personal question and hear it answered by a cast of AI advisor archetypes: a Mom, a Dad, a Grandma or Grandpa, a Random Stranger with no stake in the outcome, a ten-year-old Kid, an alien Visitor, openly-labeled dramatizations of Julius Caesar, Napoleon, George Washington and Abraham Lincoln, a fictional Elder who marched in the civil rights movement, and Biblical Counsel grounded in Scripture. The signature feature, "Ask the Table," answers one question with every selected advisor in parallel and shows where they agree and differ. Each advisor can then be talked to directly, by text or in a live, interruptible voice conversation in an age- and tone-appropriate voice. Sounding Board remembers past questions, advice, and outcomes, so later advice builds on the person's real life, while giving them full visibility and control over what is stored. Every advisor is honest about being an AI, never impersonates the user's real family, and steps out of character the moment safety requires it.
 
 ---
 
@@ -46,7 +46,7 @@ The diagram source is in `docs/architecture.mmd` (Mermaid):
 
 ```mermaid
 flowchart TB
-    subgraph Phone["📱 Hearth app (Expo / React Native)"]
+    subgraph Phone["📱 Sounding Board app (Expo / React Native)"]
         UI["Home · Advice Panel · Chat/Call · My Story · Settings"]
         Mic["Mic + VAD (Phase 4)"]
         Spk["Speaker (barge-in)"]
@@ -114,4 +114,4 @@ flowchart TB
 
 ## 5. Open decisions taken (Section 17 defaults)
 
-App name Hearth · Expo/Supabase · Sonnet 5.5 + Haiku 5.5 · Deepgram + ElevenLabs (swappable adapters) · WEB default, KJV option · ecumenical lens · Grandma/Grandpa chosen at onboarding · cross-advisor awareness ON · Stranger memory OFF ("Familiar stranger" toggle) · voice audio not stored · freemium · US English · 18+.
+App name Sounding Board (was Hearth) · Expo/Supabase · Sonnet 5.5 + Haiku 5.5 · Deepgram + ElevenLabs (swappable adapters) · WEB default, KJV option · ecumenical lens · Grandma/Grandpa chosen at onboarding · cross-advisor awareness ON · Stranger memory OFF ("Familiar stranger" toggle) · voice audio not stored · freemium · US English · 18+.
