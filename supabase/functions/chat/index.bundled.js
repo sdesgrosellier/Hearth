@@ -1967,8 +1967,33 @@ var MAX_TTS_CHARS = 1200;
 var DEFAULT_TTS_MODEL = Deno.env.get("ELEVENLABS_MODEL") ?? "eleven_flash_v2_5";
 var OUTPUT_FORMAT = Deno.env.get("ELEVENLABS_OUTPUT_FORMAT") ?? "mp3_44100_64";
 function apiKey2() {
-  return Deno.env.get("ELEVENLABS_API_KEY") ?? null;
+  const raw = (Deno.env.get("ELEVENLABS_API_KEY") ?? "").trim().replace(/^["']|["']$/g, "");
+  return raw || null;
 }
+var PREMADE_VOICES = {
+  rachel: "21m00Tcm4TlvDq8ikWAM",
+  aria: "9BWtsMINqrJLrRacOk9x",
+  sarah: "EXAVITQu4vr4xnSDxMaL",
+  laura: "FGY2WhTYpPnrIDTdsKH5",
+  charlie: "IKne3meq5aSn9XLyUdCD",
+  george: "JBFqnCBsd6RMkjVDRZzb",
+  callum: "N2lVS1w4EtoT3dr4eOWO",
+  river: "SAz9YHcvj6GT2YYXdXww",
+  liam: "TX3LPaxmHKxFdv7VOQHJ",
+  charlotte: "XB0fDUnXU5powFXDhCwa",
+  alice: "Xb7hH8MSUJpSbSDYk0k2",
+  matilda: "XrExE9yKIg1WjnnlVkGX",
+  will: "bIHbv24MWmeRgasZH58o",
+  jessica: "cgSgspJ2msm6clMCkdW9",
+  eric: "cjVigY5qzO86Huf0OWal",
+  chris: "iP95p4xoKVk53GoZ742B",
+  brian: "nPczCjzI2devNBz1zQrb",
+  daniel: "onwK4e9ZLuTAKqWW03F9",
+  lily: "pFZP5JQG7iQjIQuC4Bku",
+  bill: "pqHfZKP75CvOlQylNhV4",
+  roger: "CwhRBWXzGAHq8TQ4Fs17",
+  adam: "pNInz6obpgDQGcFmaJgB"
+};
 var voiceCache = null;
 async function loadVoices(key) {
   if (voiceCache && Date.now() - voiceCache.at < 60 * 60 * 1e3) return voiceCache;
@@ -1982,12 +2007,18 @@ async function loadVoices(key) {
 }
 async function resolveVoiceId(key, settings) {
   if (settings.voice_id && settings.voice_id !== "SET_IN_PHASE_4" && !settings.voice_name) return settings.voice_id;
-  const voices = await loadVoices(key);
   const wanted = (settings.voice_name ?? "").trim().toLowerCase();
-  if (wanted && voices.byName.has(wanted)) return voices.byName.get(wanted);
+  let voices = null;
+  try {
+    voices = await loadVoices(key);
+  } catch (err) {
+    console.warn("tts: could not list voices, using premade ids:", err.message);
+  }
+  if (wanted && voices?.byName.has(wanted)) return voices.byName.get(wanted);
+  if (wanted && PREMADE_VOICES[wanted]) return PREMADE_VOICES[wanted];
   if (settings.voice_id && settings.voice_id !== "SET_IN_PHASE_4") return settings.voice_id;
-  console.warn(`tts: voice "${settings.voice_name}" not found in account; using first available`);
-  return voices.first;
+  console.warn(`tts: voice "${settings.voice_name}" not found; using a default`);
+  return voices?.first ?? PREMADE_VOICES.daniel;
 }
 async function handleTts(admin, userId, body) {
   const key = apiKey2();
@@ -2040,7 +2071,11 @@ async function handleTts(admin, userId, body) {
   if (!upstream.ok || !upstream.body) {
     const detail = await upstream.text().catch(() => "");
     console.error("tts upstream failed", upstream.status, detail.slice(0, 300));
-    return errorResponse(upstream.status === 401 ? "Voice key rejected" : "Voice service error", 502);
+    const msg = upstream.status === 401 ? "voice_key_rejected" : upstream.status === 402 || /quota|credits/i.test(detail) ? "voice_quota_exhausted" : "voice_service_error";
+    return new Response(JSON.stringify({ error: msg, status: upstream.status }), {
+      status: 502,
+      headers: { ...CORS_HEADERS, "content-type": "application/json" }
+    });
   }
   admin.rpc("increment_usage", { p_user_id: userId, p_llm_input: 0, p_llm_output: 0, p_tts_chars: text.length, p_stt_seconds: 0 }).then(() => {
   }, (e) => console.warn("tts usage", e.message));

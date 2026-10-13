@@ -21,8 +21,36 @@ export const DEFAULT_TTS_MODEL = Deno.env.get("ELEVENLABS_MODEL") ?? "eleven_fla
 const OUTPUT_FORMAT = Deno.env.get("ELEVENLABS_OUTPUT_FORMAT") ?? "mp3_44100_64";
 
 function apiKey(): string | null {
-  return Deno.env.get("ELEVENLABS_API_KEY") ?? null;
+  const raw = (Deno.env.get("ELEVENLABS_API_KEY") ?? "").trim().replace(/^["']|["']$/g, "");
+  return raw || null;
 }
+
+// ElevenLabs' standard premade voices. Used when the key can't list voices (a key
+// restricted to text-to-speech only) so a restricted key still works.
+const PREMADE_VOICES: Record<string, string> = {
+  rachel: "21m00Tcm4TlvDq8ikWAM",
+  aria: "9BWtsMINqrJLrRacOk9x",
+  sarah: "EXAVITQu4vr4xnSDxMaL",
+  laura: "FGY2WhTYpPnrIDTdsKH5",
+  charlie: "IKne3meq5aSn9XLyUdCD",
+  george: "JBFqnCBsd6RMkjVDRZzb",
+  callum: "N2lVS1w4EtoT3dr4eOWO",
+  river: "SAz9YHcvj6GT2YYXdXww",
+  liam: "TX3LPaxmHKxFdv7VOQHJ",
+  charlotte: "XB0fDUnXU5powFXDhCwa",
+  alice: "Xb7hH8MSUJpSbSDYk0k2",
+  matilda: "XrExE9yKIg1WjnnlVkGX",
+  will: "bIHbv24MWmeRgasZH58o",
+  jessica: "cgSgspJ2msm6clMCkdW9",
+  eric: "cjVigY5qzO86Huf0OWal",
+  chris: "iP95p4xoKVk53GoZ742B",
+  brian: "nPczCjzI2devNBz1zQrb",
+  daniel: "onwK4e9ZLuTAKqWW03F9",
+  lily: "pFZP5JQG7iQjIQuC4Bku",
+  bill: "pqHfZKP75CvOlQylNhV4",
+  roger: "CwhRBWXzGAHq8TQ4Fs17",
+  adam: "pNInz6obpgDQGcFmaJgB",
+};
 
 // ---------------------------------------------------------------------------
 // Voice resolution (name → voice_id), cached per instance
@@ -44,12 +72,18 @@ async function loadVoices(key: string): Promise<NonNullable<typeof voiceCache>> 
 async function resolveVoiceId(key: string, settings: TtsSettings): Promise<string | null> {
   // An explicit id wins (anything that is not the Phase-1 placeholder).
   if (settings.voice_id && settings.voice_id !== "SET_IN_PHASE_4" && !settings.voice_name) return settings.voice_id;
-  const voices = await loadVoices(key);
   const wanted = (settings.voice_name ?? "").trim().toLowerCase();
-  if (wanted && voices.byName.has(wanted)) return voices.byName.get(wanted)!;
+  let voices: NonNullable<typeof voiceCache> | null = null;
+  try {
+    voices = await loadVoices(key);
+  } catch (err) {
+    console.warn("tts: could not list voices, using premade ids:", (err as Error).message);
+  }
+  if (wanted && voices?.byName.has(wanted)) return voices.byName.get(wanted)!;
+  if (wanted && PREMADE_VOICES[wanted]) return PREMADE_VOICES[wanted];
   if (settings.voice_id && settings.voice_id !== "SET_IN_PHASE_4") return settings.voice_id;
-  console.warn(`tts: voice "${settings.voice_name}" not found in account; using first available`);
-  return voices.first;
+  console.warn(`tts: voice "${settings.voice_name}" not found; using a default`);
+  return voices?.first ?? PREMADE_VOICES.daniel;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,7 +152,15 @@ export async function handleTts(admin: Admin, userId: string, body: TtsRequest):
   if (!upstream.ok || !upstream.body) {
     const detail = await upstream.text().catch(() => "");
     console.error("tts upstream failed", upstream.status, detail.slice(0, 300));
-    return errorResponse(upstream.status === 401 ? "Voice key rejected" : "Voice service error", 502);
+    const msg = upstream.status === 401
+      ? "voice_key_rejected"
+      : upstream.status === 402 || /quota|credits/i.test(detail)
+      ? "voice_quota_exhausted"
+      : "voice_service_error";
+    return new Response(JSON.stringify({ error: msg, status: upstream.status }), {
+      status: 502,
+      headers: { ...CORS_HEADERS, "content-type": "application/json" },
+    });
   }
 
   // Meter characters (ElevenLabs bills per character).
