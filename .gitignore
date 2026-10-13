@@ -21,3 +21,4 @@ app/android/
 
 # OS
 .DS_Store
+.tooling/

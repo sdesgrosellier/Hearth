@@ -1,6 +1,6 @@
 // Hearth — chat Edge Function (single-file build for dashboard deploy)
 // Source of truth: supabase/functions/chat/index.ts + _shared/*. Rebuild with: node scripts/bundle-function.mjs
-// _shared/safety-layer.ts
+// supabase/functions/_shared/safety-layer.ts
 var APP_NAME = "Hearth";
 var GLOBAL_SAFETY_LAYER = `
 You are an AI character inside ${APP_NAME}, a personal-advice app. You are portraying one
@@ -112,7 +112,7 @@ drifting to a safe middle. The user may be typing or speaking; respond as a pers
 talking, not as a document.
 `.trim();
 
-// _shared/prompt-assembler.ts
+// supabase/functions/_shared/prompt-assembler.ts
 var MODE_BLOCKS = {
   panel: `MODE: ADVICE PANEL CARD
 The user asked one question to several advisors at once. Answer in 120 to 220 words.
@@ -246,7 +246,7 @@ function splitReplyAndMeta(full) {
   };
 }
 
-// _shared/anthropic.ts
+// supabase/functions/_shared/anthropic.ts
 var ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 var ANTHROPIC_VERSION = "2023-06-01";
 var DEFAULT_ADVISOR_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-5-5";
@@ -347,11 +347,12 @@ async function streamMessage(prompt, onDelta, opts = {}) {
   return { text, usage, stop_reason };
 }
 
-// _shared/http.ts
+// supabase/functions/_shared/http.ts
 var CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS"
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept, cache-control, last-event-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Max-Age": "86400"
 };
 function preflight(req) {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
@@ -406,7 +407,7 @@ data: ${payload}
   return { response, send, close };
 }
 
-// _shared/supabase.ts
+// supabase/functions/_shared/supabase.ts
 import { createClient } from "npm:@supabase/supabase-js@2";
 var SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 var SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -454,7 +455,7 @@ async function loadProfile(admin, userId) {
   return { ...data, settings: { ...DEFAULT_SETTINGS, ...data.settings ?? {} } };
 }
 
-// _shared/personas/mom.json
+// supabase/functions/_shared/personas/mom.json
 var mom_default = {
   id: "mom",
   display_name: "Mom",
@@ -504,7 +505,7 @@ var mom_default = {
   }
 };
 
-// _shared/personas/dad.json
+// supabase/functions/_shared/personas/dad.json
 var dad_default = {
   id: "dad",
   display_name: "Dad",
@@ -555,7 +556,7 @@ var dad_default = {
   }
 };
 
-// _shared/personas/grandma.json
+// supabase/functions/_shared/personas/grandma.json
 var grandma_default = {
   id: "grandma",
   display_name: "Grandma",
@@ -606,7 +607,7 @@ var grandma_default = {
   }
 };
 
-// _shared/personas/grandpa.json
+// supabase/functions/_shared/personas/grandpa.json
 var grandpa_default = {
   id: "grandpa",
   display_name: "Grandpa",
@@ -658,7 +659,7 @@ var grandpa_default = {
   }
 };
 
-// _shared/personas/stranger.json
+// supabase/functions/_shared/personas/stranger.json
 var stranger_default = {
   id: "stranger",
   display_name: "Random Stranger",
@@ -706,7 +707,7 @@ var stranger_default = {
   }
 };
 
-// _shared/personas/biblical.json
+// supabase/functions/_shared/personas/biblical.json
 var biblical_default = {
   id: "biblical",
   display_name: "Biblical Counsel",
@@ -768,7 +769,7 @@ var biblical_default = {
   }
 };
 
-// _shared/personas/stranger-archetypes.json
+// supabase/functions/_shared/personas/stranger-archetypes.json
 var stranger_archetypes_default = {
   _note: "Library of Random Stranger archetypes. One is picked per session (or re-rolled by the user). Each is a plain description of a person, never a caricature. voice_hint maps to a provider voice in Phase 4.",
   archetypes: [
@@ -901,7 +902,7 @@ var stranger_archetypes_default = {
   ]
 };
 
-// _shared/personas/index.ts
+// supabase/functions/_shared/personas/index.ts
 var REGISTRY = {
   mom: mom_default,
   dad: dad_default,
@@ -922,7 +923,7 @@ function getStrangerArchetype(id) {
   return STRANGER_ARCHETYPES.find((a) => a.id === id) ?? null;
 }
 
-// chat/index.ts
+// supabase/functions/chat/index.ts
 var HISTORY_WINDOW = 20;
 var MAX_MESSAGE_CHARS = 4e3;
 function parseMeta(raw) {

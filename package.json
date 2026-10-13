@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "name": "hearth-monorepo",
+  "private": true,
+  "description": "Hearth — tooling for bundling Edge Functions",
+  "scripts": {
+    "bundle:chat": "node scripts/bundle-function.mjs"
+  }
+}
