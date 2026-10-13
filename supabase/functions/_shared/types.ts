@@ -48,6 +48,13 @@ export interface PersonaConfig {
   core_identity: string;
   values: string[];
   speech_style: string;
+  /** What makes this advisor's answer different from every other advisor's. */
+  lens?: {
+    looks_at_first: string;
+    asks: string;
+    pushes_back_when: string;
+    blind_spot: string;
+  };
   signature_moves: string[];
   scripture_rules?: string[];
   avoid: string[];

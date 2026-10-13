@@ -8,12 +8,72 @@ import { Avatar } from "./ui";
 
 export interface ChatMessage {
   id: string;
-  role: "user" | "advisor";
+  role: "user" | "advisor" | "full_circle";
   text: string;
   pending?: boolean;
   safety_flag?: "none" | "elevated" | "crisis";
   /** Which advisor said it (advisor messages only). */
   advisor_id?: string;
+  /** Advisors covered (full_circle messages only). */
+  advisors?: string[];
+}
+
+const SECTION_LABELS = [
+  "WHERE THEY AGREE",
+  "WHERE THEY PULL APART",
+  "THE ANGLES, ONE BY ONE",
+  "WHAT NO ONE SAID",
+  "ONE QUESTION TO SIT WITH",
+];
+
+/** The 360° synthesis card. Section labels in the text become headings. */
+export function FullCircleCard({ message, advisorNames }: { message: ChatMessage; advisorNames: string[] }) {
+  const t = useTheme();
+  const blocks = message.text.split(/\n+/).filter((l) => l.trim().length > 0);
+  return (
+    <View style={[styles.row, { paddingHorizontal: spacing.lg }]}>
+      <View
+        accessibilityLabel={`Full circle: ${message.text}`}
+        style={{
+          flex: 1,
+          backgroundColor: t.cardAlt,
+          borderRadius: radius.lg,
+          borderWidth: 1.5,
+          borderColor: t.primary,
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          gap: 6,
+        }}
+      >
+        <Text style={{ color: t.primary, fontWeight: "700", fontSize: 13, letterSpacing: 0.6 }}>
+          ◎ FULL CIRCLE
+        </Text>
+        {advisorNames.length ? (
+          <Text style={[typeScale.small, { color: t.muted, marginBottom: 4 }]}>{advisorNames.join(" · ")}</Text>
+        ) : null}
+        {blocks.length === 0 && message.pending ? (
+          <Text style={[typeScale.body, { color: t.muted, fontStyle: "italic" }]}>Drawing the circle…</Text>
+        ) : null}
+        {blocks.map((line, i) => {
+          const label = line.trim().toUpperCase();
+          const isHeading = SECTION_LABELS.includes(label);
+          return (
+            <Text
+              key={i}
+              style={
+                isHeading
+                  ? { color: t.text, fontWeight: "700", fontSize: 13, letterSpacing: 0.6, marginTop: i === 0 ? 0 : 10 }
+                  : [typeScale.body, { color: t.text }]
+              }
+            >
+              {isHeading ? label : line}
+              {message.pending && i === blocks.length - 1 ? <Text style={{ color: t.primary }}> ▍</Text> : null}
+            </Text>
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 
 export function MessageBubble({

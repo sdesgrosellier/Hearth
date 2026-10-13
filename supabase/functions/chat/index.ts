@@ -2,6 +2,7 @@
 //
 // Request (JSON):
 //   { advisor_id: string, message: string, session_id?: string, mode?: "text" | "voice" }
+//   or { action: "full_circle", session_id: string }  → 360° synthesis of the session
 //
 // Response: text/event-stream with events
 //   session  {session_id, advisor_id, stranger?: {name, setting}}
@@ -14,12 +15,14 @@
 
 import { assemblePrompt, META_DELIMITER, splitReplyAndMeta } from "../_shared/prompt-assembler.ts";
 import { streamMessage } from "../_shared/anthropic.ts";
+import { handleFullCircle } from "../_shared/full-circle.ts";
 import { createSseStream, errorResponse, preflight } from "../_shared/http.ts";
 import { adminClient, loadProfile, requireUserId } from "../_shared/supabase.ts";
 import { getPersona, getStrangerArchetype, pickStrangerArchetype } from "../_shared/personas/index.ts";
 import type { HistoryTurn, Mode, ResponseMeta, SafetyFlag, StrangerArchetype } from "../_shared/types.ts";
 
 interface ChatRequest {
+  action?: "full_circle";
   advisor_id?: string;
   message?: string;
   session_id?: string;
@@ -60,6 +63,10 @@ Deno.serve(async (req: Request) => {
     body = (await req.json()) as ChatRequest;
   } catch {
     return errorResponse("Invalid JSON body");
+  }
+
+  if (body.action === "full_circle") {
+    return handleFullCircle(adminClient(), userId, body.session_id);
   }
 
   const advisorId = (body.advisor_id ?? "").trim();
@@ -160,7 +167,7 @@ Deno.serve(async (req: Request) => {
   const isHandoff =
     !!lastUserTurn && lastUserTurn.content.trim() === message.trim() && previousAnswerers.length > 0;
   const modelMessage = isHandoff
-    ? `${message}\n\n[Note to you: the user already asked this same question to ${previousAnswerers.join(" and ")} in this conversation and is now bringing it to you. Answer it fresh and fully from your own point of view. You may briefly agree or disagree with what was said earlier, but do not remark that the question was repeated.]`
+    ? `${message}\n\n[Note to you: the user already asked this same question to ${previousAnswerers.join(" and ")} in this conversation and is now bringing it to you for a different angle. Do not repeat their advice or their next step; add what your lens sees that they missed: a disagreement with your reasons, a risk, a reframe, or a question they did not ask. Do not remark that the question was repeated.]`
     : message;
 
   // ---- Persist the user message ----------------------------------------------

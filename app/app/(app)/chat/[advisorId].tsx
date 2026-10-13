@@ -17,7 +17,7 @@ import {
 
 import { AdvisorChip } from "@/components/AdvisorChip";
 import { Composer } from "@/components/Composer";
-import { MessageBubble, type ChatMessage } from "@/components/MessageBubble";
+import { FullCircleCard, MessageBubble, type ChatMessage } from "@/components/MessageBubble";
 import { Avatar, Body, Card, Heading, Screen, Small } from "@/components/ui";
 import { ADVISORS, getAdvisor, type AdvisorId } from "@/config/advisors";
 import { crisisResourcesFor } from "@/constants/crisis";
@@ -62,20 +62,27 @@ export default function ChatScreen() {
     (async () => {
       const { data } = await supabase
         .from("messages")
-        .select("id, role, content, display_content, safety_flag, advisor_id")
+        .select("id, role, content, display_content, safety_flag, advisor_id, meta")
         .eq("session_id", params.sessionId)
-        .in("role", ["user", "advisor"])
+        .in("role", ["user", "advisor", "system"])
         .order("created_at", { ascending: true })
         .limit(200);
       if (cancelled) return;
       setMessages(
-        (data ?? []).map((m) => ({
-          id: m.id as string,
-          role: m.role as "user" | "advisor",
-          text: (m.display_content as string) ?? (m.content as string),
-          safety_flag: m.safety_flag as ChatMessage["safety_flag"],
-          advisor_id: (m.advisor_id as string | null) ?? undefined,
-        })),
+        (data ?? [])
+          .filter((m) => m.role !== "system" || (m.meta as { kind?: string } | null)?.kind === "full_circle")
+          .map((m) => {
+            const meta = (m.meta as { kind?: string; advisors?: string[] } | null) ?? {};
+            const role: ChatMessage["role"] = m.role === "system" ? "full_circle" : (m.role as "user" | "advisor");
+            return {
+              id: m.id as string,
+              role,
+              text: (m.display_content as string) ?? (m.content as string),
+              safety_flag: m.safety_flag as ChatMessage["safety_flag"],
+              advisor_id: (m.advisor_id as string | null) ?? undefined,
+              advisors: role === "full_circle" ? meta.advisors ?? [] : undefined,
+            };
+          }),
       );
       setLoadingHistory(false);
       scrollToEnd();
@@ -160,6 +167,46 @@ export default function ChatScreen() {
 
   const switchable = ADVISORS.filter((a) => (a.id === "biblical" ? profile?.settings.show_biblical !== false : true));
 
+  const answeredAdvisors = Array.from(
+    new Set(messages.filter((m) => m.role === "advisor" && !m.pending && m.text).map((m) => m.advisor_id ?? advisor.id)),
+  );
+  // The circle is "fresh" if no synthesis has been drawn since the last advisor answered.
+  const lastAdvisorIdx = messages.map((m) => m.role).lastIndexOf("advisor");
+  const lastCircleIdx = messages.map((m) => m.role).lastIndexOf("full_circle");
+  const circleIsCurrent = lastCircleIdx > lastAdvisorIdx;
+  const canCircle = answeredAdvisors.length >= 2 && !busy;
+
+  const fullCircle = useCallback(async () => {
+    if (busy || !sessionId || answeredAdvisors.length < 2) return;
+    setError(null);
+    setBusy(true);
+    const card: ChatMessage = { id: nextId(), role: "full_circle", text: "", pending: true, advisors: answeredAdvisors };
+    setMessages((prev) => [...prev, card]);
+    scrollToEnd();
+    cancelRef.current = await streamChat(
+      { action: "full_circle", sessionId },
+      {
+        onDelta: (chunk) => {
+          setMessages((prev) => prev.map((m) => (m.id === card.id ? { ...m, text: m.text + chunk } : m)));
+          scrollToEnd();
+        },
+        onDone: (done) => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === card.id ? { ...m, id: done.message_id ?? m.id, pending: false } : m)),
+          );
+          setBusy(false);
+          cancelRef.current = null;
+        },
+        onError: (message) => {
+          setMessages((prev) => prev.filter((m) => !(m.id === card.id && !m.text)).map((m) => (m.id === card.id ? { ...m, pending: false } : m)));
+          setError(message);
+          setBusy(false);
+          cancelRef.current = null;
+        },
+      },
+    );
+  }, [answeredAdvisors, busy, scrollToEnd, sessionId]);
+
   // Auto-send the question typed on the Home screen.
   useEffect(() => {
     if (autoSentRef.current) return;
@@ -232,6 +279,9 @@ export default function ChatScreen() {
           data={messages}
           keyExtractor={(m) => m.id}
           renderItem={({ item, index }) => {
+            if (item.role === "full_circle") {
+              return <FullCircleCard message={item} advisorNames={(item.advisors ?? []).map((id) => getAdvisor(id).name)} />;
+            }
             // A repeated question (hand-off to another advisor) renders as a compact marker.
             if (item.role === "user" && index > 0) {
               const prevUser = messages.slice(0, index).reverse().find((m) => m.role === "user");
@@ -281,7 +331,11 @@ export default function ChatScreen() {
         {hasAnswer && lastQuestion ? (
           <View style={{ gap: 6, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line }}>
             <Small style={{ paddingHorizontal: spacing.lg }}>
-              {busy ? `${advisor.name} is answering…` : "Hear from someone else on this — tap a name:"}
+              {busy
+                ? `${advisor.name} is answering…`
+                : answeredAdvisors.length >= 2
+                ? "Tap another name, or see the full circle:"
+                : "Hear from someone else on this — tap a name:"}
             </Small>
             <ScrollView
               horizontal
@@ -289,6 +343,31 @@ export default function ChatScreen() {
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: 4 }}
             >
+              {answeredAdvisors.length >= 2 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Full circle: see where the advisors agree, differ, and what no one said"
+                  disabled={!canCircle}
+                  onPress={fullCircle}
+                  style={({ pressed }) => ({
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    paddingVertical: 6,
+                    paddingHorizontal: spacing.md,
+                    borderRadius: radius.pill,
+                    backgroundColor: circleIsCurrent ? t.card : t.primary,
+                    borderWidth: 1.5,
+                    borderColor: t.primary,
+                    opacity: pressed || !canCircle ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ fontSize: 16, color: circleIsCurrent ? t.primary : "#fff" }}>◎</Text>
+                  <Text style={{ color: circleIsCurrent ? t.primary : "#fff", fontWeight: "700", fontSize: 14 }}>
+                    {circleIsCurrent ? "Full circle again" : `Full circle (${answeredAdvisors.length})`}
+                  </Text>
+                </Pressable>
+              ) : null}
               {switchable.map((a) => (
                 <AdvisorChip
                   key={a.id}

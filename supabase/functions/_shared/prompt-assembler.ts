@@ -65,6 +65,17 @@ export function renderPersonaBlock(
   lines.push(`WHO YOU ARE: ${persona.core_identity}`);
   lines.push(`WHAT YOU VALUE: ${persona.values.join("; ")}.`);
   lines.push(`HOW YOU SPEAK: ${persona.speech_style}`);
+  if (persona.lens) {
+    lines.push(
+      [
+        "YOUR LENS (this is what makes your answer different from every other advisor's; lead with it):",
+        `- What you look at first: ${persona.lens.looks_at_first}`,
+        `- The question only you ask: ${persona.lens.asks}`,
+        `- Where you push back: ${persona.lens.pushes_back_when}`,
+        `- Your blind spot (own it; do not be ruled by it): ${persona.lens.blind_spot}`,
+      ].join("\n"),
+    );
+  }
   lines.push(`YOUR SIGNATURE MOVES:\n${joinList(persona.signature_moves)}`);
   if (persona.scripture_rules?.length) {
     lines.push(`SCRIPTURE RULES:\n${joinList(persona.scripture_rules)}`);
