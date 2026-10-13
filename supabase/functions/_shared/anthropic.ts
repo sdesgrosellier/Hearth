@@ -21,12 +21,41 @@ export interface Usage {
   cache_read_input_tokens: number;
 }
 
+/**
+ * Thinking control. Claude 5.x models think by default and thinking tokens count
+ * against max_tokens, so advisor replies turn up-front thinking off ("between_tools"
+ * yields text-only responses when no tools are involved, and streams immediately).
+ * "adaptive" keeps the model's own judgement; pair it with `effort` and a larger
+ * max_tokens. Override the advisor default with the ANTHROPIC_THINKING secret
+ * (between_tools | adaptive | disabled | none).
+ */
+export type ThinkingMode = "between_tools" | "adaptive" | "disabled" | "none";
+export type Effort = "low" | "medium" | "high";
+
+export const DEFAULT_THINKING: ThinkingMode =
+  (Deno.env.get("ANTHROPIC_THINKING") as ThinkingMode | undefined) ?? "between_tools";
+
 export interface StreamOptions {
   model?: string;
   max_tokens?: number;
-  /** Only sent when set explicitly; current models reject `temperature` (deprecated). */
+  /** Only sent when set explicitly; current models reject non-default sampling values. */
   temperature?: number;
+  thinking?: ThinkingMode;
+  effort?: Effort;
   signal?: AbortSignal;
+}
+
+function thinkingParam(mode: ThinkingMode): Record<string, unknown> {
+  switch (mode) {
+    case "between_tools":
+      return { thinking: { type: "between_tools" } };
+    case "adaptive":
+      return { thinking: { type: "adaptive" } };
+    case "disabled":
+      return { thinking: { type: "disabled" } };
+    default:
+      return {};
+  }
 }
 
 export interface StreamResult {
@@ -54,6 +83,8 @@ export async function streamMessage(
     model: opts.model ?? DEFAULT_ADVISOR_MODEL,
     max_tokens: opts.max_tokens ?? 1024,
     ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
+    ...thinkingParam(opts.thinking ?? DEFAULT_THINKING),
+    ...(opts.effort ? { output_config: { effort: opts.effort } } : {}),
     system: prompt.system,
     messages: prompt.messages,
     stream: true,

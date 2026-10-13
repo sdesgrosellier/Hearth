@@ -120,8 +120,12 @@ export async function handleFullCircle(
   const run = async () => {
     send("session", { session_id: sessionId, advisor_id: "full_circle", advisors });
     try {
+      // The synthesis benefits from reasoning over every answer: keep adaptive thinking
+      // on (medium effort) and leave room for both thinking and the ~400-word text.
       const result = await streamMessage(prompt, (chunk) => send("delta", { text: chunk }), {
-        max_tokens: 900,
+        max_tokens: 4096,
+        thinking: "adaptive",
+        effort: "medium",
       });
       const text = result.text.trim();
 

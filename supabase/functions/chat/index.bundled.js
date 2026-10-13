@@ -317,6 +317,19 @@ var ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 var ANTHROPIC_VERSION = "2023-06-01";
 var DEFAULT_ADVISOR_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-5-5";
 var DEFAULT_FAST_MODEL = Deno.env.get("ANTHROPIC_FAST_MODEL") ?? "claude-haiku-5-5";
+var DEFAULT_THINKING = Deno.env.get("ANTHROPIC_THINKING") ?? "between_tools";
+function thinkingParam(mode) {
+  switch (mode) {
+    case "between_tools":
+      return { thinking: { type: "between_tools" } };
+    case "adaptive":
+      return { thinking: { type: "adaptive" } };
+    case "disabled":
+      return { thinking: { type: "disabled" } };
+    default:
+      return {};
+  }
+}
 function apiKey() {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set");
@@ -327,6 +340,8 @@ async function streamMessage(prompt, onDelta, opts = {}) {
     model: opts.model ?? DEFAULT_ADVISOR_MODEL,
     max_tokens: opts.max_tokens ?? 1024,
     ...opts.temperature !== void 0 ? { temperature: opts.temperature } : {},
+    ...thinkingParam(opts.thinking ?? DEFAULT_THINKING),
+    ...opts.effort ? { output_config: { effort: opts.effort } } : {},
     system: prompt.system,
     messages: prompt.messages,
     stream: true
@@ -1546,7 +1561,9 @@ Write the full circle now.`
     send("session", { session_id: sessionId, advisor_id: "full_circle", advisors });
     try {
       const result = await streamMessage(prompt, (chunk) => send("delta", { text: chunk }), {
-        max_tokens: 900
+        max_tokens: 4096,
+        thinking: "adaptive",
+        effort: "medium"
       });
       const text = result.text.trim();
       let messageId = null;
@@ -1786,7 +1803,8 @@ Deno.serve(async (req) => {
     };
     try {
       const result = await streamMessage(prompt, forward, {
-        max_tokens: mode === "voice" ? 700 : 1024
+        max_tokens: mode === "voice" ? 800 : 1400
+        // text only (up-front thinking is off)
       });
       if (!metaStarted && pending) {
         send("delta", { text: pending });

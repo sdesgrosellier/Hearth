@@ -229,7 +229,7 @@ Deno.serve(async (req: Request) => {
 
     try {
       const result = await streamMessage(prompt, forward, {
-        max_tokens: mode === "voice" ? 700 : 1024,
+        max_tokens: mode === "voice" ? 800 : 1400, // text only (up-front thinking is off)
       });
       if (!metaStarted && pending) {
         send("delta", { text: pending });
