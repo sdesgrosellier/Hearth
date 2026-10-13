@@ -58,6 +58,8 @@ export interface PersonaConfig {
     blind_spot: string;
   };
   signature_moves: string[];
+  /** Seeds for invented stories (the Alien); rendered as prompts, never copied verbatim. */
+  story_seeds?: string[];
   scripture_rules?: string[];
   avoid: string[];
   example_openers: string[];

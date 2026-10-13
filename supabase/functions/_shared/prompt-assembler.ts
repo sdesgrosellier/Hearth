@@ -77,6 +77,11 @@ export function renderPersonaBlock(
     );
   }
   lines.push(`YOUR SIGNATURE MOVES:\n${joinList(persona.signature_moves)}`);
+  if (persona.story_seeds?.length) {
+    lines.push(
+      `STORY SEEDS (starting points for your tales; invent far beyond them, combine them, or make up new worlds entirely; never retell one the user has already heard in this conversation):\n${joinList(persona.story_seeds)}`,
+    );
+  }
   if (persona.scripture_rules?.length) {
     lines.push(`SCRIPTURE RULES:\n${joinList(persona.scripture_rules)}`);
   }
