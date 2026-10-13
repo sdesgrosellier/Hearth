@@ -42,6 +42,8 @@ export interface PersonaConfig {
   category?: AdvisorCategory;
   /** True for openly-labeled dramatizations of real people (adds the HISTORICAL FIGURES note). */
   historical?: boolean;
+  /** Left out of the Full circle synthesis (comic voices that would skew it). */
+  excluded_from_circle?: boolean;
   avatar: { emoji: string; accent: string; illustration: string };
   age_range: string;
   voice_profile: string;

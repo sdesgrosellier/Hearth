@@ -72,7 +72,7 @@ export default function ChatScreen() {
         (data ?? [])
           .filter((m) => m.role !== "system" || (m.meta as { kind?: string } | null)?.kind === "full_circle")
           .map((m) => {
-            const meta = (m.meta as { kind?: string; advisors?: string[] } | null) ?? {};
+            const meta = (m.meta as { kind?: string; advisors?: string[]; excluded?: string[] } | null) ?? {};
             const role: ChatMessage["role"] = m.role === "system" ? "full_circle" : (m.role as "user" | "advisor");
             return {
               id: m.id as string,
@@ -81,6 +81,7 @@ export default function ChatScreen() {
               safety_flag: m.safety_flag as ChatMessage["safety_flag"],
               advisor_id: (m.advisor_id as string | null) ?? undefined,
               advisors: role === "full_circle" ? meta.advisors ?? [] : undefined,
+              excluded: role === "full_circle" ? meta.excluded ?? [] : undefined,
             };
           }),
       );
@@ -167,9 +168,12 @@ export default function ChatScreen() {
 
   const switchable = ADVISORS.filter((a) => (a.id === "biblical" ? profile?.settings.show_biblical !== false : true));
 
-  const answeredAdvisors = Array.from(
+  const allAnswered = Array.from(
     new Set(messages.filter((m) => m.role === "advisor" && !m.pending && m.text).map((m) => m.advisor_id ?? advisor.id)),
   );
+  // Comic voices (the Alien) are left out of the circle so they don't skew it.
+  const answeredAdvisors = allAnswered.filter((id) => !getAdvisor(id).excludeFromCircle);
+  const satOut = allAnswered.filter((id) => getAdvisor(id).excludeFromCircle);
   // The circle is "fresh" if no synthesis has been drawn since the last advisor answered.
   const lastAdvisorIdx = messages.map((m) => m.role).lastIndexOf("advisor");
   const lastCircleIdx = messages.map((m) => m.role).lastIndexOf("full_circle");
@@ -180,7 +184,7 @@ export default function ChatScreen() {
     if (busy || !sessionId || answeredAdvisors.length < 2) return;
     setError(null);
     setBusy(true);
-    const card: ChatMessage = { id: nextId(), role: "full_circle", text: "", pending: true, advisors: answeredAdvisors };
+    const card: ChatMessage = { id: nextId(), role: "full_circle", text: "", pending: true, advisors: answeredAdvisors, excluded: satOut };
     setMessages((prev) => [...prev, card]);
     scrollToEnd();
     cancelRef.current = await streamChat(
@@ -205,7 +209,7 @@ export default function ChatScreen() {
         },
       },
     );
-  }, [answeredAdvisors, busy, scrollToEnd, sessionId]);
+  }, [answeredAdvisors, busy, satOut, scrollToEnd, sessionId]);
 
   // Auto-send the question typed on the Home screen.
   useEffect(() => {
@@ -280,7 +284,13 @@ export default function ChatScreen() {
           keyExtractor={(m) => m.id}
           renderItem={({ item, index }) => {
             if (item.role === "full_circle") {
-              return <FullCircleCard message={item} advisorNames={(item.advisors ?? []).map((id) => getAdvisor(id).name)} />;
+              return (
+                <FullCircleCard
+                  message={item}
+                  advisorNames={(item.advisors ?? []).map((id) => getAdvisor(id).name)}
+                  satOutNames={(item.excluded ?? []).map((id) => getAdvisor(id).name)}
+                />
+              );
             }
             // A repeated question (hand-off to another advisor) renders as a compact marker.
             if (item.role === "user" && index > 0) {

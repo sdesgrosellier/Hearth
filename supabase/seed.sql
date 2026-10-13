@@ -10,7 +10,7 @@ insert into public.personas (id, config, version, active) values
   ('stranger', '{"display_name":"Random Stranger","short_label":"Stranger","accent":"#D9A441","emoji":"🧍","category":"fresh"}'::jsonb, 2, true),
   ('biblical', '{"display_name":"Biblical Counsel","short_label":"Scripture","accent":"#7A5C3E","emoji":"✝️","category":"faith"}'::jsonb, 2, true),
   ('kid',        '{"display_name":"The Kid","short_label":"Kid","accent":"#E8873A","emoji":"🧒","category":"fresh"}'::jsonb, 2, true),
-  ('alien',      '{"display_name":"The Visitor","short_label":"Alien","accent":"#4FA3A5","emoji":"👽","category":"fresh"}'::jsonb, 2, true),
+  ('alien',      '{"display_name":"Alien","short_label":"Alien","accent":"#4FA3A5","emoji":"👽","category":"fresh"}'::jsonb, 2, true),
   ('caesar',     '{"display_name":"Julius Caesar","short_label":"Caesar","accent":"#9A2F2F","emoji":"🏛️","category":"history","historical":true}'::jsonb, 2, true),
   ('napoleon',   '{"display_name":"Napoleon Bonaparte","short_label":"Napoleon","accent":"#1F3A93","emoji":"🎖️","category":"history","historical":true}'::jsonb, 2, true),
   ('washington', '{"display_name":"George Washington","short_label":"Washington","accent":"#2E4A62","emoji":"🦅","category":"history","historical":true}'::jsonb, 2, true),

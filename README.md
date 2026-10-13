@@ -1,6 +1,6 @@
 # Sounding Board
 
-Bounce any personal question off a whole cast of advisors and hear it answered from very different places: **Family** (Mom, Dad, Grandma, Grandpa), **Fresh perspectives** (a Random Stranger, a ten-year-old Kid, an alien Visitor), **Voices from history** (Julius Caesar, Napoleon, George Washington, Abraham Lincoln, and an Elder who marched in the civil rights movement), and **Faith** (Biblical Counsel). Every advisor is an AI character, honest about it, and puts your safety first. Historical advisors are openly-labeled dramatizations that speak in the person's spirit, never invent quotations, and own the real person's failures.
+Bounce any personal question off a whole cast of advisors and hear it answered from very different places: **Family** (Mom, Dad, Grandma, Grandpa), **Fresh perspectives** (a Random Stranger, a ten-year-old Kid, an Alien), **Voices from history** (Julius Caesar, Napoleon, George Washington, Abraham Lincoln, and an Elder who marched in the civil rights movement), and **Faith** (Biblical Counsel). Every advisor is an AI character, honest about it, and puts your safety first. Historical advisors are openly-labeled dramatizations that speak in the person's spirit, never invent quotations, and own the real person's failures.
 
 Formerly "Hearth" (working title).
 

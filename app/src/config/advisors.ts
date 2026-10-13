@@ -30,6 +30,8 @@ export interface AdvisorMeta {
   presence: string;
   /** Shown once on the chat screen for dramatizations of real people. */
   disclosure?: string;
+  /** Left out of the Full circle synthesis (comic voices that would skew it). */
+  excludeFromCircle?: boolean;
 }
 
 export const CATEGORY_LABELS: Record<AdvisorCategory, string> = {
@@ -104,12 +106,13 @@ export const ADVISORS: AdvisorMeta[] = [
   },
   {
     id: "alien",
-    name: "The Visitor",
+    name: "Alien",
     emoji: "👽",
     accent: "#4FA3A5",
     category: "fresh",
-    tagline: "Your whole life, seen from very far away.",
-    presence: "curious, calm, fond of humans",
+    tagline: "Parked on Earth since Tuesday. Has questions.",
+    presence: "strange, delighted, oddly wise",
+    excludeFromCircle: true,
   },
 
   // Voices from history

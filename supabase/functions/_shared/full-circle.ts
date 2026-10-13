@@ -16,8 +16,8 @@ type Admin = any;
 export const FULL_CIRCLE_SYSTEM = `
 You are the "Full circle" view inside ${APP_NAME}, a personal-advice app. Several AI advisor
 characters have each answered the user's question from a deliberately different lens (a
-mother, a father, a grandparent, a stranger, a child, a visitor from far away, historical
-figures, a civil-rights elder, Scripture). Your job is NOT to pick a winner or produce a
+mother, a father, a grandparent, a stranger, a child, historical figures, a civil-rights
+elder, Scripture). Your job is NOT to pick a winner or produce a
 bland average. It is to give the user a 360-degree map of their situation so they can see
 the whole circle at once, and spot an angle they may have missed.
 
@@ -56,9 +56,12 @@ interface Row {
   content: string;
 }
 
-export function buildFullCircleTranscript(rows: Row[]): { transcript: string; advisors: string[] } {
+export function buildFullCircleTranscript(
+  rows: Row[],
+): { transcript: string; advisors: string[]; excluded: string[] } {
   const lines: string[] = [];
   const advisors: string[] = [];
+  const excluded: string[] = [];
   let lastUser: string | null = null;
   for (const r of rows) {
     if (r.role === "user") {
@@ -68,13 +71,18 @@ export function buildFullCircleTranscript(rows: Row[]): { transcript: string; ad
       lines.push(`THE USER ASKED: ${text}`);
     } else if (r.advisor_id && r.content.trim()) {
       const persona = getPersona(r.advisor_id);
+      // Comic voices (the Alien) are deliberately left out so they don't skew the map.
+      if (persona?.excluded_from_circle) {
+        if (!excluded.includes(r.advisor_id)) excluded.push(r.advisor_id);
+        continue;
+      }
       const name = persona?.display_name ?? r.advisor_id;
       if (!advisors.includes(r.advisor_id)) advisors.push(r.advisor_id);
       const lens = persona?.lens ? ` (lens: ${persona.lens.looks_at_first})` : "";
       lines.push(`${name.toUpperCase()}${lens} SAID:\n${r.content.trim()}`);
     }
   }
-  return { transcript: lines.join("\n\n"), advisors };
+  return { transcript: lines.join("\n\n"), advisors, excluded };
 }
 
 export async function handleFullCircle(
@@ -101,9 +109,9 @@ export async function handleFullCircle(
     .limit(80);
   if (rowsErr) return errorResponse(rowsErr.message, 500);
 
-  const { transcript, advisors } = buildFullCircleTranscript((rows ?? []) as Row[]);
+  const { transcript, advisors, excluded } = buildFullCircleTranscript((rows ?? []) as Row[]);
   if (advisors.length < 2) {
-    return errorResponse("Ask at least two advisors first, then come back for the full circle.", 400);
+    return errorResponse("Ask at least two advisors (the Alien doesn't count) first, then come back for the full circle.", 400);
   }
 
   const prompt: AssembledPrompt = {
@@ -118,7 +126,7 @@ export async function handleFullCircle(
 
   const { response, send, close } = createSseStream();
   const run = async () => {
-    send("session", { session_id: sessionId, advisor_id: "full_circle", advisors });
+    send("session", { session_id: sessionId, advisor_id: "full_circle", advisors, excluded });
     try {
       // The synthesis benefits from reasoning over every answer: keep adaptive thinking
       // on (medium effort) and leave room for both thinking and the ~400-word text.
@@ -140,7 +148,7 @@ export async function handleFullCircle(
             advisor_id: null,
             content: text,
             display_content: text,
-            meta: { kind: "full_circle", advisors, model_usage: result.usage },
+            meta: { kind: "full_circle", advisors, excluded, model_usage: result.usage },
           })
           .select("id")
           .single();
@@ -166,6 +174,7 @@ export async function handleFullCircle(
         safety_flag: "none",
         scripture_refs: [],
         advisors,
+        excluded,
         usage: result.usage,
       });
     } catch (err) {

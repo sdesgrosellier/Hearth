@@ -16,6 +16,8 @@ export interface ChatMessage {
   advisor_id?: string;
   /** Advisors covered (full_circle messages only). */
   advisors?: string[];
+  /** Advisors deliberately left out of the circle (full_circle messages only). */
+  excluded?: string[];
 }
 
 const SECTION_LABELS = [
@@ -27,7 +29,15 @@ const SECTION_LABELS = [
 ];
 
 /** The 360° synthesis card. Section labels in the text become headings. */
-export function FullCircleCard({ message, advisorNames }: { message: ChatMessage; advisorNames: string[] }) {
+export function FullCircleCard({
+  message,
+  advisorNames,
+  satOutNames = [],
+}: {
+  message: ChatMessage;
+  advisorNames: string[];
+  satOutNames?: string[];
+}) {
   const t = useTheme();
   const blocks = message.text.split(/\n+/).filter((l) => l.trim().length > 0);
   return (
@@ -49,7 +59,10 @@ export function FullCircleCard({ message, advisorNames }: { message: ChatMessage
           ◎ FULL CIRCLE
         </Text>
         {advisorNames.length ? (
-          <Text style={[typeScale.small, { color: t.muted, marginBottom: 4 }]}>{advisorNames.join(" · ")}</Text>
+          <Text style={[typeScale.small, { color: t.muted, marginBottom: 4 }]}>
+            {advisorNames.join(" · ")}
+            {satOutNames.length ? `   (${satOutNames.join(", ")} sat this one out)` : ""}
+          </Text>
         ) : null}
         {blocks.length === 0 && message.pending ? (
           <Text style={[typeScale.body, { color: t.muted, fontStyle: "italic" }]}>Drawing the circle…</Text>
