@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { deviceTimezone, updateProfile } from "@/lib/profile";
 import { radius, spacing, useTheme } from "@/theme";
 
-export default function Onboarding() {
+export default function OnboardingScreen() {
   const t = useTheme();
   const { session, profile, refreshProfile } = useAuth();
   const [step, setStep] = useState(0);

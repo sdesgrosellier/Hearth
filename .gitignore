@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!app/.env.production
 supabase/.env.local
 supabase/.temp/
 supabase/.branches/
