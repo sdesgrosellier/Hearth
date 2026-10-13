@@ -297,7 +297,7 @@ async function streamMessage(prompt, onDelta, opts = {}) {
   const body = {
     model: opts.model ?? DEFAULT_ADVISOR_MODEL,
     max_tokens: opts.max_tokens ?? 1024,
-    temperature: opts.temperature ?? 0.8,
+    ...opts.temperature !== void 0 ? { temperature: opts.temperature } : {},
     system: prompt.system,
     messages: prompt.messages,
     stream: true

@@ -24,6 +24,7 @@ export interface Usage {
 export interface StreamOptions {
   model?: string;
   max_tokens?: number;
+  /** Only sent when set explicitly; current models reject `temperature` (deprecated). */
   temperature?: number;
   signal?: AbortSignal;
 }
@@ -52,7 +53,7 @@ export async function streamMessage(
   const body = {
     model: opts.model ?? DEFAULT_ADVISOR_MODEL,
     max_tokens: opts.max_tokens ?? 1024,
-    temperature: opts.temperature ?? 0.8,
+    ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
     system: prompt.system,
     messages: prompt.messages,
     stream: true,
