@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+supabase/.env.local
+supabase/.temp/
+supabase/.branches/
+
+# Expo
+app/.expo/
+app/dist/
+app/web-build/
+app/expo-env.d.ts
+app/ios/
+app/android/
+*.tsbuildinfo
+
+# OS
+.DS_Store

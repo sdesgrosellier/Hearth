@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Hearth",
+    "slug": "hearth",
+    "version": "0.1.0",
+    "scheme": "hearth",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F6EFE6"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.hearth.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "So you can talk with your advisors out loud.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.hearth.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F6EFE6",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

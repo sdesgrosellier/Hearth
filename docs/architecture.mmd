@@ -1,0 +1,49 @@
+flowchart TB
+    subgraph Phone["📱 Hearth app (Expo / React Native)"]
+        UI["Home · Advice Panel · Chat/Call · My Story · Settings"]
+        Mic["Mic + VAD\n(Phase 4)"]
+        Spk["Speaker\n(barge-in)"]
+        Auth["Supabase Auth\n(email code, Apple, Google)"]
+    end
+
+    subgraph Supabase["☁️ Supabase project"]
+        GW["API gateway\n(JWT check)"]
+        subgraph EF["Edge Functions (Deno)"]
+            Chat["chat\n(Phase 1 ✅)"]
+            Panel["panel\n(Phase 2)"]
+            Converse["converse WS\n(Phase 4)"]
+            TTS["tts\n(Phase 4)"]
+            Mem["memory jobs\n(Phase 3)"]
+        end
+        subgraph Shared["_shared"]
+            SL["Safety layer"]
+            PA["Prompt assembler"]
+            PJ["Persona JSON ×6\n+ 14 stranger archetypes"]
+            VV["Verse verifier\n(Phase 5)"]
+        end
+        DB[("Postgres + pgvector\nprofiles · sessions · messages\nmemory_facts · followups · usage\nbible_verses · safety_events\nRLS: user_id = auth.uid()")]
+    end
+
+    subgraph Providers["External providers (keys live only in Edge Functions)"]
+        Claude["Claude API\nSonnet 5.5 (advisors)\nHaiku 5.5 (summaries, facts,\nsafety classifier, synthesis)"]
+        STT["Deepgram Nova-3\nstreaming STT"]
+        EL["ElevenLabs Flash\nper-persona voices"]
+    end
+
+    UI -->|HTTPS + SSE| GW
+    Mic -->|WebSocket audio| GW
+    GW --> Chat & Panel & Converse & TTS
+    Chat & Panel & Converse --> SL --> PA
+    PJ --> PA
+    PA -->|system + messages\n(prompt-cached prefix)| Claude
+    Claude -->|streamed tokens| Chat & Panel & Converse
+    Converse --> STT
+    Converse --> VV
+    Converse -->|sentence chunks| EL
+    TTS --> EL
+    EL -->|audio stream| Spk
+    Chat & Panel & Converse -->|write transcripts| DB
+    Mem -->|summaries · facts · embeddings| DB
+    DB -->|memory context| PA
+    Auth --> GW
+    UI -->|RLS reads: history, My Story| DB
