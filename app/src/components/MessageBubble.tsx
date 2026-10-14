@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { type AdvisorMeta } from "@/config/advisors";
+import { type ScriptureRef } from "@/lib/chat-stream";
 import { radius, spacing, type as typeScale, useTheme } from "@/theme";
 
 import { AdvisorIcon, FullCircleIcon } from "./AdvisorIcon";
@@ -18,6 +19,8 @@ export interface ChatMessage {
   advisors?: string[];
   /** Advisors deliberately left out of the circle (full_circle messages only). */
   excluded?: string[];
+  /** Passages the advisor cited, checked against the Bible text (advisor messages). */
+  scripture_refs?: ScriptureRef[];
 }
 
 const SECTION_LABELS = [
@@ -139,10 +142,32 @@ export function MessageBubble({
           <Text style={{ color: advisor.accent, fontWeight: "700", fontSize: 13, marginBottom: 4 }}>{advisor.name}</Text>
         ) : null}
         {message.text || !message.pending ? (
-          <Text style={[typeScale.body, { color: t.text }]}>
-            {message.text}
-            {message.pending ? <Text style={{ color: advisor.accent }}> ▍</Text> : null}
-          </Text>
+          <>
+            <Text style={[typeScale.body, { color: t.text }]}>
+              {message.text}
+              {message.pending ? <Text style={{ color: advisor.accent }}> ▍</Text> : null}
+            </Text>
+            {message.scripture_refs?.length ? (
+              <View style={{ marginTop: 10, gap: 8 }}>
+                {message.scripture_refs.map((r, i) => (
+                  <View
+                    key={`${r.ref}-${i}`}
+                    style={{ borderLeftWidth: 3, borderLeftColor: r.verified ? advisor.accent : t.line, paddingLeft: 10, gap: 2 }}
+                  >
+                    <Text style={[typeScale.small, { color: r.verified ? advisor.accent : t.muted, fontWeight: "700" }]}>
+                      {r.ref}
+                      {r.verified ? ` (${r.translation ?? "WEB"})` : ""}
+                    </Text>
+                    {r.verified && r.text ? (
+                      <Text style={[typeScale.small, { color: t.text, fontStyle: "italic" }]}>{r.text}</Text>
+                    ) : (
+                      <Text style={[typeScale.small, { color: t.muted }]}>This reference couldn't be verified in the Bible text, so it isn't shown.</Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </>
         ) : (
           <Text style={[typeScale.body, { color: t.muted, fontStyle: "italic" }]}>
             {advisor.name} is thinking…

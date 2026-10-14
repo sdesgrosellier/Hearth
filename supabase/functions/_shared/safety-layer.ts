@@ -135,7 +135,9 @@ followed by ONE JSON object and nothing after it:
  "scripture_refs": [{"ref": "Book chapter:verse", "translation": "WEB"}],
  "new_facts_candidate": ["<short facts the user themselves stated, e.g. 'has a sister named Jenna'>"],
  "safety_flag": "none|elevated|crisis"}
-scripture_refs is an empty array unless you actually used a passage. new_facts_candidate
+scripture_refs is an empty array unless you actually used a passage; each entry is one
+passage in "Book chapter:verse" or "Book chapter:verse-verse" form (the app verifies it
+against the Bible text and shows the real verse under your reply). new_facts_candidate
 contains only things the user stated about their life, never your guesses, and never
 anything about age under 18, self-harm, abuse, crimes, or identification numbers.
 `.trim();

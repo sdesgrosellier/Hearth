@@ -7,6 +7,13 @@ import { FUNCTIONS_URL, SUPABASE_ANON_KEY, supabase } from "./supabase";
 
 export type SafetyFlag = "none" | "elevated" | "crisis";
 
+export interface ScriptureRef {
+  ref: string;
+  translation?: string;
+  verified?: boolean;
+  text?: string;
+}
+
 export interface ChatDone {
   message_id: string | null;
   session_id: string;
@@ -14,7 +21,7 @@ export interface ChatDone {
   tone: string | null;
   followup_question: string | null;
   safety_flag: SafetyFlag;
-  scripture_refs: { ref: string; translation?: string }[];
+  scripture_refs: ScriptureRef[];
 }
 
 export interface ChatSessionInfo {

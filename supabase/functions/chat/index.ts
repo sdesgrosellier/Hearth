@@ -19,6 +19,7 @@ import { streamMessage } from "../_shared/anthropic.ts";
 import { handleFullCircle } from "../_shared/full-circle.ts";
 import { createSseStream, errorResponse, preflight } from "../_shared/http.ts";
 import { retrieveMemory, updateMemoryAfterTurn } from "../_shared/memory.ts";
+import { verifyRefs } from "../_shared/scripture.ts";
 import { handleTts } from "../_shared/tts.ts";
 import { CAP_MESSAGE, overMonthlyCap } from "../_shared/usage.ts";
 import { adminClient, loadProfile, requireUserId } from "../_shared/supabase.ts";
@@ -252,6 +253,10 @@ Deno.serve(async (req: Request) => {
       const { text, metaRaw } = splitReplyAndMeta(result.text);
       const meta = parseMeta(metaRaw);
       const safety = normalizeSafety(meta.safety_flag);
+      // Phase 5: every cited passage is checked against the bundled Bible text.
+      const scriptureRefs = (meta.scripture_refs ?? []).length
+        ? await verifyRefs(admin, meta.scripture_refs ?? [], profile.settings.bible_translation)
+        : [];
 
       let messageId: string | null = null;
       if (!offRecord) {
@@ -266,7 +271,7 @@ Deno.serve(async (req: Request) => {
             display_content: text,
             headline: meta.headline ?? null,
             tone: meta.tone ?? null,
-            scripture_refs: meta.scripture_refs ?? [],
+            scripture_refs: scriptureRefs,
             safety_flag: safety,
             meta: {
               followup_question: meta.followup_question ?? null,
@@ -301,7 +306,7 @@ Deno.serve(async (req: Request) => {
         tone: meta.tone ?? null,
         followup_question: meta.followup_question ?? null,
         safety_flag: safety,
-        scripture_refs: meta.scripture_refs ?? [],
+        scripture_refs: scriptureRefs,
         usage: result.usage,
       });
       close(); // the user has their answer; memory work continues in the background

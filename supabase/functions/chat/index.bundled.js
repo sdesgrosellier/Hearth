@@ -133,7 +133,9 @@ followed by ONE JSON object and nothing after it:
  "scripture_refs": [{"ref": "Book chapter:verse", "translation": "WEB"}],
  "new_facts_candidate": ["<short facts the user themselves stated, e.g. 'has a sister named Jenna'>"],
  "safety_flag": "none|elevated|crisis"}
-scripture_refs is an empty array unless you actually used a passage. new_facts_candidate
+scripture_refs is an empty array unless you actually used a passage; each entry is one
+passage in "Book chapter:verse" or "Book chapter:verse-verse" form (the app verifies it
+against the Bible text and shows the real verse under your reply). new_facts_candidate
 contains only things the user stated about their life, never your guesses, and never
 anything about age under 18, self-harm, abuse, crimes, or identification numbers.
 `.trim();
@@ -848,11 +850,11 @@ var biblical_default = {
     "Where Christian traditions genuinely differ on a question, say so briefly and fairly rather than declaring one side."
   ],
   scripture_rules: [
-    'NEVER invent, misquote, or misattribute a verse. If you are not certain of exact wording, give the reference and a clearly labeled paraphrase ("Paul writes, in effect, that...") rather than a quotation.',
-    "Default translation is the World English Bible (WEB); the user may select KJV. Always include the reference (book chapter:verse) with every passage.",
+    "Give the reference (book chapter:verse) for every passage you use. The app looks each reference up in the World English Bible and prints the exact verse text under your reply, so you do not need to quote at length: name the passage, say what it means here, and let the text speak.",
+    'Cite only passages you are certain exist and say what you believe they say. If you are unsure of a reference, do not guess at chapter and verse; describe the passage in words ("the story of the prodigal son") without a citation.',
+    'Short quotations are fine when you are sure of them; otherwise paraphrase and label it ("Paul writes, in effect, that..."). Never invent, misquote, or misattribute.',
     "Use passages in their context. Do not proof-text a verse to mean something it does not.",
-    "Every quotation is verified against a bundled Bible text before display (Phase 5). Until then, prefer paraphrase with reference over verbatim quotes you cannot guarantee.",
-    "List every passage you used in the scripture_refs field of your metadata."
+    "Default translation is the World English Bible (WEB). List every passage you used in the scripture_refs field of your metadata, in Book chapter:verse form, one entry per passage."
   ],
   avoid: [
     "Condemnation, shame, or fear-based manipulation",
@@ -1961,6 +1963,148 @@ ${advisorReply}`,
   }
 }
 
+// supabase/functions/_shared/scripture.ts
+var MAX_REFS = 6;
+var MAX_VERSES_PER_REF = 8;
+var BOOKS = [
+  ["Genesis", ["gen", "ge", "gn"]],
+  ["Exodus", ["exod", "exo", "ex"]],
+  ["Leviticus", ["lev", "le", "lv"]],
+  ["Numbers", ["num", "nu", "nm", "nb"]],
+  ["Deuteronomy", ["deut", "deu", "dt"]],
+  ["Joshua", ["josh", "jos", "jsh"]],
+  ["Judges", ["judg", "jdg", "jg", "jdgs"]],
+  ["Ruth", ["rth", "ru"]],
+  ["1 Samuel", ["1sam", "1sa", "1sm", "1s", "isamuel", "firstsamuel"]],
+  ["2 Samuel", ["2sam", "2sa", "2sm", "2s", "iisamuel", "secondsamuel"]],
+  ["1 Kings", ["1kgs", "1ki", "1k", "ikings", "firstkings"]],
+  ["2 Kings", ["2kgs", "2ki", "2k", "iikings", "secondkings"]],
+  ["1 Chronicles", ["1chr", "1ch", "1chron", "ichronicles", "firstchronicles"]],
+  ["2 Chronicles", ["2chr", "2ch", "2chron", "iichronicles", "secondchronicles"]],
+  ["Ezra", ["ezr"]],
+  ["Nehemiah", ["neh", "ne"]],
+  ["Esther", ["esth", "est", "es"]],
+  ["Job", ["jb"]],
+  ["Psalms", ["psalm", "ps", "psa", "pss", "psm", "pslm"]],
+  ["Proverbs", ["prov", "pro", "pr", "prv"]],
+  ["Ecclesiastes", ["eccl", "eccles", "ecc", "ec", "qoh", "qoheleth"]],
+  ["Song of Solomon", ["song", "songofsongs", "sos", "so", "canticles", "cant", "songs"]],
+  ["Isaiah", ["isa", "is"]],
+  ["Jeremiah", ["jer", "je", "jr"]],
+  ["Lamentations", ["lam", "la"]],
+  ["Ezekiel", ["ezek", "eze", "ezk"]],
+  ["Daniel", ["dan", "da", "dn"]],
+  ["Hosea", ["hos", "ho"]],
+  ["Joel", ["jl"]],
+  ["Amos", ["am"]],
+  ["Obadiah", ["obad", "ob"]],
+  ["Jonah", ["jon", "jnh"]],
+  ["Micah", ["mic", "mc"]],
+  ["Nahum", ["nah", "na"]],
+  ["Habakkuk", ["hab", "hb"]],
+  ["Zephaniah", ["zeph", "zep", "zp"]],
+  ["Haggai", ["hag", "hg"]],
+  ["Zechariah", ["zech", "zec", "zc"]],
+  ["Malachi", ["mal", "ml"]],
+  ["Matthew", ["matt", "mat", "mt"]],
+  ["Mark", ["mrk", "mk", "mr"]],
+  ["Luke", ["luk", "lk"]],
+  ["John", ["jhn", "jn"]],
+  ["Acts", ["act", "ac"]],
+  ["Romans", ["rom", "ro", "rm"]],
+  ["1 Corinthians", ["1cor", "1co", "icorinthians", "firstcorinthians"]],
+  ["2 Corinthians", ["2cor", "2co", "iicorinthians", "secondcorinthians"]],
+  ["Galatians", ["gal", "ga"]],
+  ["Ephesians", ["eph", "ephes"]],
+  ["Philippians", ["phil", "php", "pp"]],
+  ["Colossians", ["col", "co"]],
+  ["1 Thessalonians", ["1thess", "1thes", "1th", "ithessalonians", "firstthessalonians"]],
+  ["2 Thessalonians", ["2thess", "2thes", "2th", "iithessalonians", "secondthessalonians"]],
+  ["1 Timothy", ["1tim", "1ti", "itimothy", "firsttimothy"]],
+  ["2 Timothy", ["2tim", "2ti", "iitimothy", "secondtimothy"]],
+  ["Titus", ["tit", "ti"]],
+  ["Philemon", ["phlm", "philem", "phm", "pm"]],
+  ["Hebrews", ["heb"]],
+  ["James", ["jas", "jm"]],
+  ["1 Peter", ["1pet", "1pe", "1pt", "1p", "ipeter", "firstpeter"]],
+  ["2 Peter", ["2pet", "2pe", "2pt", "2p", "iipeter", "secondpeter"]],
+  ["1 John", ["1jn", "1jhn", "1jo", "1j", "ijohn", "firstjohn"]],
+  ["2 John", ["2jn", "2jhn", "2jo", "2j", "iijohn", "secondjohn"]],
+  ["3 John", ["3jn", "3jhn", "3jo", "3j", "iiijohn", "thirdjohn"]],
+  ["Jude", ["jud", "jd"]],
+  ["Revelation", ["rev", "re", "revelations", "apocalypse"]]
+];
+var BOOK_INDEX = /* @__PURE__ */ new Map();
+for (const [name, abbrevs] of BOOKS) {
+  BOOK_INDEX.set(name.toLowerCase().replace(/[^a-z0-9]/g, ""), name);
+  for (const a of abbrevs) BOOK_INDEX.set(a, name);
+}
+function canonicalBook(raw) {
+  const key = raw.toLowerCase().replace(/\./g, "").replace(/[^a-z0-9]/g, "");
+  return BOOK_INDEX.get(key) ?? null;
+}
+function parseRef(input) {
+  const s = input.trim().replace(/[–—]/g, "-").replace(/\s+/g, " ");
+  const m = s.match(/^((?:[1-3]|I{1,3})?\s*[A-Za-z][A-Za-z .]*?)\s*(\d{1,3})(?::(\d{1,3})(?:\s*-\s*(\d{1,3}))?)?(?:[,;].*)?$/);
+  if (!m) return null;
+  const book = canonicalBook(m[1]);
+  if (!book) return null;
+  const chapter = Number(m[2]);
+  const from = m[3] ? Number(m[3]) : null;
+  const to = m[4] ? Number(m[4]) : from;
+  if (!chapter || from !== null && (!from || to !== null && to < from)) return null;
+  return { book, chapter, from, to };
+}
+function formatRef(p, verses) {
+  const book = p.book === "Psalms" ? "Psalm" : p.book;
+  if (!verses.length) return `${book} ${p.chapter}`;
+  const first = verses[0];
+  const last = verses[verses.length - 1];
+  return first === last ? `${book} ${p.chapter}:${first}` : `${book} ${p.chapter}:${first}-${last}`;
+}
+async function verifyRefs(admin, refs, preferredTranslation = "WEB") {
+  const out = [];
+  const translation = "WEB";
+  const seen = /* @__PURE__ */ new Set();
+  for (const r of refs.slice(0, MAX_REFS)) {
+    const raw = (r.ref ?? "").trim();
+    if (!raw) continue;
+    const parsed = parseRef(raw);
+    if (!parsed) {
+      out.push({ ref: raw, translation: preferredTranslation, verified: false });
+      continue;
+    }
+    const from = parsed.from ?? 1;
+    const to = Math.min(parsed.to ?? (parsed.from ?? MAX_VERSES_PER_REF), from + MAX_VERSES_PER_REF - 1);
+    const key = `${parsed.book}|${parsed.chapter}|${from}|${to}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const { data, error } = await admin.from("bible_verses").select("verse, text").eq("translation", translation).eq("book", parsed.book).eq("chapter", parsed.chapter).gte("verse", from).lte("verse", to).order("verse", { ascending: true });
+    if (error) {
+      console.warn("scripture lookup failed", error.message);
+      out.push({ ref: raw, translation, verified: false });
+      continue;
+    }
+    const rows = data ?? [];
+    if (!rows.length) {
+      out.push({ ref: formatRef(parsed, parsed.from ? [from, to] : []), translation, verified: false });
+      continue;
+    }
+    const verses = rows.map((x) => x.verse);
+    const text = rows.length === 1 ? rows[0].text : rows.map((x) => `${x.verse} ${x.text}`).join(" ");
+    out.push({
+      ref: formatRef(parsed, verses),
+      translation,
+      verified: true,
+      text,
+      book: parsed.book,
+      chapter: parsed.chapter,
+      verses
+    });
+  }
+  return out;
+}
+
 // supabase/functions/_shared/tts.ts
 var ELEVEN_API = "https://api.elevenlabs.io/v1";
 var MAX_TTS_CHARS = 1200;
@@ -2295,6 +2439,7 @@ Deno.serve(async (req) => {
       const { text, metaRaw } = splitReplyAndMeta(result.text);
       const meta = parseMeta(metaRaw);
       const safety = normalizeSafety(meta.safety_flag);
+      const scriptureRefs = (meta.scripture_refs ?? []).length ? await verifyRefs(admin, meta.scripture_refs ?? [], profile.settings.bible_translation) : [];
       let messageId = null;
       if (!offRecord) {
         const { data: inserted, error } = await admin.from("messages").insert({
@@ -2306,7 +2451,7 @@ Deno.serve(async (req) => {
           display_content: text,
           headline: meta.headline ?? null,
           tone: meta.tone ?? null,
-          scripture_refs: meta.scripture_refs ?? [],
+          scripture_refs: scriptureRefs,
           safety_flag: safety,
           meta: {
             followup_question: meta.followup_question ?? null,
@@ -2335,7 +2480,7 @@ Deno.serve(async (req) => {
         tone: meta.tone ?? null,
         followup_question: meta.followup_question ?? null,
         safety_flag: safety,
-        scripture_refs: meta.scripture_refs ?? [],
+        scripture_refs: scriptureRefs,
         usage: result.usage
       });
       close();

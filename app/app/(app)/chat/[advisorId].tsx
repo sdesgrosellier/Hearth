@@ -86,7 +86,7 @@ export default function ChatScreen() {
     (async () => {
       const { data } = await supabase
         .from("messages")
-        .select("id, role, content, display_content, safety_flag, advisor_id, meta")
+        .select("id, role, content, display_content, safety_flag, advisor_id, meta, scripture_refs")
         .eq("session_id", params.sessionId)
         .in("role", ["user", "advisor", "system"])
         .order("created_at", { ascending: true })
@@ -106,6 +106,7 @@ export default function ChatScreen() {
               advisor_id: (m.advisor_id as string | null) ?? undefined,
               advisors: role === "full_circle" ? meta.advisors ?? [] : undefined,
               excluded: role === "full_circle" ? meta.excluded ?? [] : undefined,
+              scripture_refs: role === "advisor" ? ((m.scripture_refs as ChatMessage["scripture_refs"]) ?? []) : undefined,
             };
           }),
       );
@@ -159,7 +160,7 @@ export default function ChatScreen() {
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === advisorMsg.id
-                  ? { ...m, id: done.message_id ?? m.id, pending: false, safety_flag: done.safety_flag }
+                  ? { ...m, id: done.message_id ?? m.id, pending: false, safety_flag: done.safety_flag, scripture_refs: done.scripture_refs ?? [] }
                   : m,
               ),
             );
