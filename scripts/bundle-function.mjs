@@ -22,7 +22,7 @@ const result = await esbuild.build({
   logLevel: "warning",
 });
 let code = result.outputFiles[0].text;
-const header = `// Sounding Board — chat Edge Function (single-file build for dashboard deploy)
+const header = `// Round Table — chat Edge Function (single-file build for dashboard deploy)
 // Source of truth: supabase/functions/chat/index.ts + _shared/*. Rebuild with: node scripts/bundle-function.mjs
 `;
 writeFileSync(join(ROOT, "supabase/functions/chat/index.bundled.js"), header + code);

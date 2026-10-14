@@ -25,7 +25,7 @@ export default function OnboardingScreen() {
   const finish = async () => {
     if (!session) return;
     if (!isAdult) {
-      setError("Sounding Board is for adults 18 and over.");
+      setError("Round Table is for adults 18 and over.");
       return;
     }
     setBusy(true);
@@ -55,7 +55,7 @@ export default function OnboardingScreen() {
   const steps = [
     <View key="welcome" style={{ gap: spacing.lg }}>
       <Text style={{ fontSize: 44 }}>🔥</Text>
-      <Title>Welcome to Sounding Board</Title>
+      <Title>Welcome to Round Table</Title>
       <Body>
         Ask any personal question and hear it answered by a Mom, a Dad, a Grandma or Grandpa, a random stranger with
         fresh eyes, or counsel from Scripture.
@@ -65,7 +65,7 @@ export default function OnboardingScreen() {
         <Body muted>• Every advisor is an AI character. Not a real person, and never your actual family.</Body>
         <Body muted>• They're not therapists, doctors, lawyers, or financial advisors.</Body>
         <Body muted>• They'll always put your safety first, even over staying in character.</Body>
-        <Body muted>• You control what Sounding Board remembers. You can see, edit, or delete it any time.</Body>
+        <Body muted>• You control what Round Table remembers. You can see, edit, or delete it any time.</Body>
       </Card>
       <Button title="Sounds good" onPress={() => setStep(1)} />
     </View>,
@@ -134,7 +134,7 @@ export default function OnboardingScreen() {
       <Card style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <View style={{ flex: 1, paddingRight: spacing.md }}>
           <Heading>I'm 18 or older</Heading>
-          <Small>Sounding Board is designed for adults.</Small>
+          <Small>Round Table is designed for adults.</Small>
         </View>
         <Switch
           accessibilityLabel="I confirm I am 18 or older"

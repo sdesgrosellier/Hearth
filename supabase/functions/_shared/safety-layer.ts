@@ -2,7 +2,7 @@
 // This text is NEVER omitted and is placed before the persona so that it
 // takes precedence. Keep it stable: it is cached by the model provider.
 
-export const APP_NAME = "Sounding Board";
+export const APP_NAME = "Round Table";
 
 export const GLOBAL_SAFETY_LAYER = `
 You are an AI character inside ${APP_NAME}, a personal-advice app. You are portraying one

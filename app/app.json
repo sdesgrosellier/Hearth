@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "Sounding Board",
-    "slug": "sounding-board",
+    "name": "Round Table",
+    "slug": "round-table",
     "version": "0.1.0",
-    "scheme": "soundingboard",
+    "scheme": "roundtable",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -11,20 +11,20 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F6EFE6"
+      "backgroundColor": "#F5F8F9"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.soundingboard.app",
+      "bundleIdentifier": "com.roundtable.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "So you can talk with your advisors out loud.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.soundingboard.app",
+      "package": "com.roundtable.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F6EFE6",
+        "backgroundColor": "#F5F8F9",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -44,7 +44,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "baseUrl": "/sounding-board"
+      "baseUrl": "/round-table"
     }
   }
 }

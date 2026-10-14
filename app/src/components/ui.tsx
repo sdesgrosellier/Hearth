@@ -1,4 +1,4 @@
-// Small, shared UI primitives in the Sounding Board style.
+// Small, shared UI primitives in the Round Table style.
 
 import React from "react";
 import {

@@ -16,9 +16,11 @@ import {
 } from "react-native";
 
 import { AdvisorChip } from "@/components/AdvisorChip";
+import { AdvisorIcon, FullCircleIcon } from "@/components/AdvisorIcon";
+import { BackIcon, MicIcon, SpeakerIcon, StopIcon } from "@/components/Icons";
 import { Composer } from "@/components/Composer";
 import { FullCircleCard, MessageBubble, type ChatMessage } from "@/components/MessageBubble";
-import { Avatar, Body, Card, Heading, Screen, Small } from "@/components/ui";
+import { Body, Card, Heading, Screen, Small } from "@/components/ui";
 import { ADVISORS, getAdvisor, type AdvisorId } from "@/config/advisors";
 import { crisisResourcesFor } from "@/constants/crisis";
 import { useAuth } from "@/lib/auth-context";
@@ -320,9 +322,9 @@ export default function ChatScreen() {
           }}
         >
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} hitSlop={12}>
-            <Text style={{ fontSize: 22, color: t.text }}>‹</Text>
+            <BackIcon color={t.text} />
           </Pressable>
-          <Avatar emoji={advisor.emoji} accent={advisor.accent} size={40} />
+          <AdvisorIcon id={advisor.id} size={40} />
           <View style={{ flex: 1 }}>
             <Heading>{advisor.name}</Heading>
             <Small>{strangerIntro ?? advisor.presence}</Small>
@@ -337,9 +339,9 @@ export default function ChatScreen() {
                 setSpeakReplies((v) => !v);
               }}
               hitSlop={8}
-              style={{ paddingVertical: 6, paddingHorizontal: 8, borderRadius: radius.pill, backgroundColor: speakReplies ? advisor.accent : t.cardAlt }}
+              style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: radius.pill, backgroundColor: speakReplies ? advisor.accent : t.cardAlt }}
             >
-              <Text style={{ fontSize: 16 }}>{speakReplies ? "🔊" : "🔈"}</Text>
+              <SpeakerIcon size={18} on={speakReplies} color={speakReplies ? "#FFFFFF" : t.primary} />
             </Pressable>
           ) : null}
           <Pressable
@@ -413,7 +415,7 @@ export default function ChatScreen() {
           ListEmptyComponent={
             loadingHistory ? null : (
               <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.xl, gap: spacing.sm }}>
-                <Avatar emoji={advisor.emoji} accent={advisor.accent} size={72} />
+                <AdvisorIcon id={advisor.id} size={72} />
                 <Heading>{advisor.name}</Heading>
                 <Body muted style={{ textAlign: "center" }}>
                   {advisor.tagline} Say what's going on, in your own words.
@@ -466,7 +468,7 @@ export default function ChatScreen() {
                     opacity: pressed || !canCircle ? 0.7 : 1,
                   })}
                 >
-                  <Text style={{ fontSize: 16, color: circleIsCurrent ? t.primary : "#fff" }}>◎</Text>
+                  <FullCircleIcon size={18} onDark={!circleIsCurrent} />
                   <Text style={{ color: circleIsCurrent ? t.primary : "#fff", fontWeight: "700", fontSize: 14 }}>
                     {circleIsCurrent ? "Full circle again" : `Full circle (${answeredAdvisors.length})`}
                   </Text>
@@ -487,7 +489,7 @@ export default function ChatScreen() {
 
         {listening || interim ? (
           <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: t.cardAlt, flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
-            <Text style={{ fontSize: 16 }}>🎙️</Text>
+            <MicIcon size={18} color={t.danger} />
             <Text style={{ flex: 1, fontSize: 16, lineHeight: 22, color: interim ? t.text : t.muted, fontStyle: interim ? "normal" : "italic" }} numberOfLines={3}>
               {interim || "Listening… say what's on your mind, then pause."}
             </Text>
@@ -534,7 +536,7 @@ export default function ChatScreen() {
                   opacity: pressed || busy ? 0.7 : 1,
                 })}
               >
-                <Text style={{ fontSize: 20 }}>{listening ? "■" : "🎙️"}</Text>
+                {listening ? <StopIcon size={20} color="#FFFFFF" /> : <MicIcon size={20} color={advisor.accent} />}
               </Pressable>
             ) : undefined
           }

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { type AdvisorMeta } from "@/config/advisors";
 import { radius, spacing, type as typeScale, useTheme } from "@/theme";
 
-import { Avatar } from "./ui";
+import { AdvisorIcon, FullCircleIcon } from "./AdvisorIcon";
 
 export interface ChatMessage {
   id: string;
@@ -55,9 +55,10 @@ export function FullCircleCard({
           gap: 6,
         }}
       >
-        <Text style={{ color: t.primary, fontWeight: "700", fontSize: 13, letterSpacing: 0.6 }}>
-          ◎ FULL CIRCLE
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <FullCircleIcon size={20} />
+          <Text style={{ color: t.primary, fontWeight: "800", fontSize: 13, letterSpacing: 0.8 }}>FULL CIRCLE</Text>
+        </View>
         {advisorNames.length ? (
           <Text style={[typeScale.small, { color: t.muted, marginBottom: 4 }]}>
             {advisorNames.join(" · ")}
@@ -120,7 +121,7 @@ export function MessageBubble({
 
   return (
     <View style={[styles.row, { alignItems: "flex-end", gap: spacing.sm }]}>
-      <Avatar emoji={advisor.emoji} accent={advisor.accent} size={32} />
+      <AdvisorIcon id={advisor.id} size={32} />
       <View
         accessibilityLabel={`${advisor.name} said: ${message.text}`}
         style={[

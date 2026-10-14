@@ -7,7 +7,10 @@ import React, { useCallback, useState } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { AdvisorChip } from "@/components/AdvisorChip";
-import { Avatar, Body, Heading, Screen, Small } from "@/components/ui";
+import { AdvisorIcon } from "@/components/AdvisorIcon";
+import { BookIcon, SettingsIcon } from "@/components/Icons";
+import { Logo } from "@/components/Logo";
+import { Body, Heading, Screen, Small } from "@/components/ui";
 import { ADVISORS, getAdvisor, groupAdvisors, type AdvisorId } from "@/config/advisors";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
@@ -88,11 +91,9 @@ export default function Home() {
         ListHeaderComponent={
           <View style={{ padding: spacing.xl, gap: spacing.lg }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <View>
-                <Small>{greeting ? `Hi, ${greeting}.` : "Hi there."}</Small>
-                <Text style={{ fontSize: 28, fontWeight: "700", color: t.text, letterSpacing: -0.5 }}>
-                  What's on your mind?
-                </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+                <Logo width={40} />
+                <Text style={{ fontSize: 17, fontWeight: "800", color: t.text, letterSpacing: -0.2 }}>Round Table</Text>
               </View>
               <View style={{ flexDirection: "row", gap: spacing.md, alignItems: "center" }}>
                 <Pressable
@@ -101,7 +102,9 @@ export default function Home() {
                   onPress={() => router.push("/(app)/story")}
                   hitSlop={12}
                 >
-                  <Text style={{ fontSize: 22 }}>📖</Text>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: t.line, backgroundColor: t.card, alignItems: "center", justifyContent: "center" }}>
+                    <BookIcon size={18} color={t.primary} />
+                  </View>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -109,9 +112,18 @@ export default function Home() {
                   onPress={() => router.push("/(app)/settings")}
                   hitSlop={12}
                 >
-                  <Text style={{ fontSize: 22 }}>⚙️</Text>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: t.line, backgroundColor: t.card, alignItems: "center", justifyContent: "center" }}>
+                    <SettingsIcon size={18} color={t.primary} />
+                  </View>
                 </Pressable>
               </View>
+            </View>
+
+            <View>
+              <Small>{greeting ? `Hi, ${greeting}.` : "Hi there."}</Small>
+              <Text style={{ fontSize: 28, fontWeight: "800", color: t.text, letterSpacing: -0.5 }}>
+                What's on your mind?
+              </Text>
             </View>
 
             <View
@@ -200,7 +212,7 @@ export default function Home() {
                 borderColor: t.line,
               })}
             >
-              <Avatar emoji={advisor.emoji} accent={advisor.accent} size={38} />
+              <AdvisorIcon id={advisor.id} size={38} />
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={1} style={{ color: t.text, fontWeight: "600" }}>
                   {item.title || "Conversation"}

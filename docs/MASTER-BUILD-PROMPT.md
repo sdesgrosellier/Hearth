@@ -1,4 +1,4 @@
-# MASTER BUILD PROMPT — "Sounding Board" (originally "Hearth", renamed 2026-10-13): A Multi-Voice AI Personal Advice App
+# MASTER BUILD PROMPT — "Round Table" (originally "Hearth", renamed 2026-10-13): A Multi-Voice AI Personal Advice App
 
 > **How to use this prompt:** Paste this whole document into an AI coding assistant (Claude, Claude Code, or similar) as the opening instruction. Replace anything in `{{DOUBLE_BRACES}}` with your own choices. Section 17 lists the decisions that are still open, each with a sensible default, so the build can start right away.
 
@@ -485,7 +485,7 @@ For each phase, deliver: code, setup steps, environment variables, and a test ch
 ---
 
 ## 17. Open Decisions (defaults in brackets — proceed with defaults unless I say otherwise)
-1. App name → [{{APP_NAME}} = "Sounding Board"]
+1. App name → [{{APP_NAME}} = "Round Table"]
 2. Platform → [iOS + Android via React Native/Expo]
 3. Backend → [Supabase]
 4. STT / TTS providers → [Pick the best latency/quality/cost options at build time and explain the choice]

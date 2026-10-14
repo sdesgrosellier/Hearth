@@ -38,7 +38,7 @@ export default function Settings() {
   const deleteAccount = () => {
     Alert.alert(
       "Delete your account?",
-      "This permanently deletes every conversation and everything Sounding Board remembers about you. It can't be undone.",
+      "This permanently deletes every conversation and everything Round Table remembers about you. It can't be undone.",
       [
         { text: "Cancel", style: "cancel" },
         {

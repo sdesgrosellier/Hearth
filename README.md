@@ -1,15 +1,15 @@
-# Sounding Board
+# Round Table
 
 Bounce any personal question off a whole cast of advisors and hear it answered from very different places: **Family** (Mom, Dad, Grandma, Grandpa), **Fresh perspectives** (a Random Stranger, a ten-year-old Kid, an Alien), **Voices from history** (Julius Caesar, Napoleon, George Washington, Abraham Lincoln, and an Elder who marched in the civil rights movement), and **Faith** (Biblical Counsel). Every advisor is an AI character, honest about it, and puts your safety first. Historical advisors are openly-labeled dramatizations that speak in the person's spirit, never invent quotations, and own the real person's failures.
 
 Formerly "Hearth" (working title).
 
-**Live web beta:** https://sdesgrosellier.github.io/sounding-board/ — deployed by GitHub Actions on every push to `main`.
+**Live web beta:** https://sdesgrosellier.github.io/round-table/ — deployed by GitHub Actions on every push to `main`.
 
 **Status:** Phase 1 (Foundation) complete and live. See `docs/ARCHITECTURE.md` for the stack decision, cost model, diagram, and risks, and `docs/PHASE-1-TEST-CHECKLIST.md` for how to verify this phase.
 
 ```
-sounding-board/
+round-table/
 ├── app/                      Expo (React Native + TypeScript) mobile app
 │   ├── app/                  expo-router screens
 │   │   └── src/screens       sign-in (email + password) and onboarding, rendered by the auth gate
@@ -56,7 +56,7 @@ Nothing else is needed for Phase 1. ElevenLabs/Deepgram accounts come in Phase 4
 ### 1. Database
 
 ```bash
-cd sounding-board
+cd round-table
 supabase login
 supabase link --project-ref YOUR_PROJECT_REF
 supabase db push                 # applies supabase/migrations/*

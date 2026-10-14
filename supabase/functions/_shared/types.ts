@@ -1,4 +1,4 @@
-// Shared types for Sounding Board Edge Functions.
+// Shared types for Round Table Edge Functions.
 
 export type AdvisorId =
   | "mom"

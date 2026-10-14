@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { radius, spacing, useTheme } from "@/theme";
 
+import { SendIcon } from "./Icons";
+
 export function Composer({
   onSend,
   disabled,
@@ -82,7 +84,7 @@ export function Composer({
           opacity: pressed ? 0.8 : 1,
         })}
       >
-        <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>↑</Text>
+        <SendIcon size={20} color="#fff" />
       </Pressable>
     </View>
   );

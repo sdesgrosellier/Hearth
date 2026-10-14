@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session?.user.id]);
 
   useEffect(() => {
-    refreshProfile().catch((e) => console.warn("[soundingboard] profile load failed", e?.message));
+    refreshProfile().catch((e) => console.warn("[roundtable] profile load failed", e?.message));
   }, [refreshProfile]);
 
   const signOut = useCallback(async () => {

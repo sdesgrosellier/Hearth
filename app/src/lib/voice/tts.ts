@@ -100,12 +100,12 @@ export function createSpeaker(): Speaker {
         return null;
       }
       if (!res.ok) {
-        console.warn("[soundingboard] tts failed", res.status);
+        console.warn("[roundtable] tts failed", res.status);
         return null;
       }
       return await res.blob();
     } catch (e) {
-      if ((e as Error).name !== "AbortError") console.warn("[soundingboard] tts error", (e as Error).message);
+      if ((e as Error).name !== "AbortError") console.warn("[roundtable] tts error", (e as Error).message);
       return null;
     }
   }

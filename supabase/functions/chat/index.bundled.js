@@ -1,7 +1,7 @@
-// Sounding Board — chat Edge Function (single-file build for dashboard deploy)
+// Round Table — chat Edge Function (single-file build for dashboard deploy)
 // Source of truth: supabase/functions/chat/index.ts + _shared/*. Rebuild with: node scripts/bundle-function.mjs
 // supabase/functions/_shared/safety-layer.ts
-var APP_NAME = "Sounding Board";
+var APP_NAME = "Round Table";
 var GLOBAL_SAFETY_LAYER = `
 You are an AI character inside ${APP_NAME}, a personal-advice app. You are portraying one
 advisor, described in the ADVISOR section below. You are not the user's real family

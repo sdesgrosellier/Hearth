@@ -1,10 +1,11 @@
 {
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "esbuild": "^0.28.2"
   },
-  "name": "sounding-board-monorepo",
+  "name": "round-table-monorepo",
   "private": true,
-  "description": "Sounding Board — tooling for bundling Edge Functions",
+  "description": "Round Table — tooling for bundling Edge Functions",
   "scripts": {
     "bundle:chat": "node scripts/bundle-function.mjs"
   }
