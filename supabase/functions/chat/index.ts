@@ -17,8 +17,10 @@
 import { assemblePrompt, META_DELIMITER, splitReplyAndMeta } from "../_shared/prompt-assembler.ts";
 import { streamMessage } from "../_shared/anthropic.ts";
 import { handleFullCircle } from "../_shared/full-circle.ts";
-import { createSseStream, errorResponse, preflight } from "../_shared/http.ts";
+import { CORS_HEADERS, createSseStream, errorResponse, preflight } from "../_shared/http.ts";
 import { retrieveMemory, updateMemoryAfterTurn } from "../_shared/memory.ts";
+import { runSafetyEval, safetyAlertBlock, screenMessage, stricter } from "../_shared/safety.ts";
+import { userClient } from "../_shared/supabase.ts";
 import { verifyRefs } from "../_shared/scripture.ts";
 import { handleTts } from "../_shared/tts.ts";
 import { CAP_MESSAGE, overMonthlyCap } from "../_shared/usage.ts";
@@ -27,7 +29,7 @@ import { getPersona, getStrangerArchetype, pickStrangerArchetype } from "../_sha
 import type { HistoryTurn, Mode, ResponseMeta, SafetyFlag, StrangerArchetype } from "../_shared/types.ts";
 
 interface ChatRequest {
-  action?: "full_circle" | "tts";
+  action?: "full_circle" | "tts" | "safety_eval";
   text?: string;
   stranger_archetype_id?: string;
   advisor_id?: string;
@@ -77,6 +79,21 @@ Deno.serve(async (req: Request) => {
   }
   if (body.action === "tts") {
     return handleTts(adminClient(), userId, body);
+  }
+  if (body.action === "safety_eval") {
+    // Owner only: the ADMIN_EMAIL secret must match the caller's email.
+    const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "").trim().toLowerCase();
+    const { data } = await userClient(req).auth.getUser();
+    const email = (data.user?.email ?? "").toLowerCase();
+    if (!adminEmail || !email || email !== adminEmail) return errorResponse("Not allowed", 403);
+    try {
+      const report = await runSafetyEval();
+      return new Response(JSON.stringify(report, null, 2), {
+        headers: { ...CORS_HEADERS, "content-type": "application/json" },
+      });
+    } catch (err) {
+      return errorResponse(`safety eval failed: ${(err as Error).message}`, 500);
+    }
   }
 
   const advisorId = (body.advisor_id ?? "").trim();
@@ -193,8 +210,14 @@ Deno.serve(async (req: Request) => {
     if (error) return errorResponse(error.message, 500);
   }
 
-  // ---- Memory (Phase 3) ------------------------------------------------------
-  const memory = await retrieveMemory(admin, profile, sessionId, message, advisorId);
+  // ---- Memory (Phase 3) + independent safety screen (Phase 6), in parallel ----
+  const [memory, screen] = await Promise.all([
+    retrieveMemory(admin, profile, sessionId, message, advisorId),
+    screenMessage(message, history.filter((t) => t.role === "user").map((t) => t.content)),
+  ]);
+  if (screen.flag !== "none") {
+    console.warn("safety screen", screen.flag, screen.category, screen.reason);
+  }
 
   // ---- Prompt ----------------------------------------------------------------
   const prompt = assemblePrompt({
@@ -206,6 +229,7 @@ Deno.serve(async (req: Request) => {
     userMessage: modelMessage,
     strangerArchetype,
     isFirstTurn,
+    safetyAlert: safetyAlertBlock(screen),
   });
 
   // ---- Stream ----------------------------------------------------------------
@@ -218,6 +242,8 @@ Deno.serve(async (req: Request) => {
       stranger: strangerArchetype
         ? { id: strangerArchetype.id, name: strangerArchetype.name, setting: strangerArchetype.setting }
         : undefined,
+      // The app shows the resources card right away on a crisis, before the reply streams.
+      safety_flag: screen.flag,
     });
 
     // Gate that forwards reply text but never leaks the metadata delimiter.
@@ -252,7 +278,8 @@ Deno.serve(async (req: Request) => {
 
       const { text, metaRaw } = splitReplyAndMeta(result.text);
       const meta = parseMeta(metaRaw);
-      const safety = normalizeSafety(meta.safety_flag);
+      // The stricter of the independent screen and the advisor's own flag wins.
+      const safety = stricter(screen.flag, normalizeSafety(meta.safety_flag));
       // Phase 5: every cited passage is checked against the bundled Bible text.
       const scriptureRefs = (meta.scripture_refs ?? []).length
         ? await verifyRefs(admin, meta.scripture_refs ?? [], profile.settings.bible_translation)
@@ -286,7 +313,11 @@ Deno.serve(async (req: Request) => {
         messageId = inserted.id as string;
 
         if (safety !== "none") {
-          await admin.from("safety_events").insert({ user_id: userId, category: safety });
+          await admin.from("safety_events").insert({
+            user_id: userId,
+            category: safety,
+            meta: { screen: screen.category, screen_flag: screen.flag, advisor_flag: meta.safety_flag ?? "none", advisor_id: advisorId },
+          });
         }
       }
 

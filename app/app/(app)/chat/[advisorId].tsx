@@ -144,6 +144,7 @@ export default function ChatScreen() {
         {
           onSession: (info) => {
             setSessionId(info.session_id);
+            if (info.safety_flag === "crisis") setShowHelp(true); // before the reply, not after
             if (info.stranger) {
               setStrangerIntro(`${info.stranger.name}, ${info.stranger.setting}`);
               strangerIdRef.current = info.stranger.id ?? null;

@@ -29,6 +29,8 @@ export interface AssembleInput {
   /** True on the first advisor turn of a session (Stranger introduces themself). */
   isFirstTurn: boolean;
   now?: Date;
+  /** Phase 6: text from the independent safety screen, injected ahead of everything variable. */
+  safetyAlert?: string;
 }
 
 const MODE_BLOCKS: Record<Mode, string> = {
@@ -164,6 +166,7 @@ export function assemblePrompt(input: AssembleInput): AssembledPrompt {
     : "This conversation is already in progress; do not greet them again.";
 
   const variableSuffix = [
+    ...(input.safetyAlert ? [input.safetyAlert] : []),
     MODE_BLOCKS[mode],
     renderProfileBlock(profile),
     memoryBlock,

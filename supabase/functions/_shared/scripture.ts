@@ -20,7 +20,7 @@ export interface VerifiedRef {
 }
 
 const MAX_REFS = 6;
-const MAX_VERSES_PER_REF = 8;
+const MAX_VERSES_PER_REF = 10;
 
 // Canonical book names (as stored) and the abbreviations people and models use.
 const BOOKS: [string, string[]][] = [

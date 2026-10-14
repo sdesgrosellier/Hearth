@@ -28,6 +28,8 @@ export interface ChatSessionInfo {
   session_id: string;
   advisor_id: string;
   stranger?: { id?: string; name: string; setting: string };
+  /** Verdict of the independent safety screen, sent before the reply streams. */
+  safety_flag?: SafetyFlag;
 }
 
 export interface ChatStreamHandlers {

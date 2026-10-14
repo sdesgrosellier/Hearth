@@ -282,6 +282,7 @@ function assemblePrompt(input) {
 ${memoryContext.trim()}` : "MEMORY: nothing stored yet. Work from what the user tells you now.";
   const firstTurnNote = isFirstTurn ? "This is the first exchange of this conversation." : "This conversation is already in progress; do not greet them again.";
   const variableSuffix = [
+    ...input.safetyAlert ? [input.safetyAlert] : [],
     MODE_BLOCKS[mode],
     renderProfileBlock(profile),
     memoryBlock,
@@ -1963,9 +1964,155 @@ ${advisorReply}`,
   }
 }
 
+// supabase/functions/_shared/safety.ts
+var SCREEN_SYSTEM = `
+You are a safety screen for a personal-advice app. You read the user's newest message
+(with a little recent context) and return ONLY a JSON object:
+{"flag":"none|elevated|crisis","category":"self_harm|harm_others|abuse_or_danger|medical_emergency|child_at_risk|possible_minor|substance_misuse|disordered_eating|none","reason":"<ten words max>"}
+
+crisis = any of: suicidal thoughts or intent, wanting to disappear or not wake up,
+self-harm now or planned, intent to hurt someone else, the user is being abused,
+threatened, or in physical danger right now, a medical emergency in progress, a child
+being harmed or endangered. Set crisis even when it is phrased casually or as a joke.
+
+elevated = concerning but not an emergency: persistent hopelessness, heavy or escalating
+drinking or drug use, purging or starving, an abusive relationship in the past tense, a
+threat that is vague or hypothetical, the user seems to be under 18 (possible_minor),
+grief or panic that is intense but not dangerous.
+
+none = ordinary life problems, including sad or angry ones, money and work stress,
+breakups, parenting, faith questions, arguments.
+
+Judge the user's own situation, not fiction they describe, a question about statistics,
+or someone else's distant story, unless the user is clearly in danger themselves. Never
+add text outside the JSON.
+`.trim();
+var FLAG_RANK = { none: 0, elevated: 1, crisis: 2 };
+function stricter(a, b) {
+  return FLAG_RANK[a] >= FLAG_RANK[b] ? a : b;
+}
+var CATEGORIES = /* @__PURE__ */ new Set([
+  "self_harm",
+  "harm_others",
+  "abuse_or_danger",
+  "medical_emergency",
+  "child_at_risk",
+  "possible_minor",
+  "substance_misuse",
+  "disordered_eating",
+  "none"
+]);
+async function screenMessage(message, recentUserTurns) {
+  const context = recentUserTurns.slice(-3).map((t) => `- ${t.slice(0, 300)}`).join("\n");
+  const user = `${context ? `RECENT MESSAGES FROM THE USER (context only):
+${context}
+
+` : ""}NEWEST MESSAGE:
+${message.slice(0, 2e3)}
+
+Return the JSON.`;
+  try {
+    const result = await streamMessage(
+      {
+        system: [{ type: "text", text: SCREEN_SYSTEM, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: user }]
+      },
+      () => {
+      },
+      { model: DEFAULT_FAST_MODEL, max_tokens: 120, thinking: "disabled" }
+    );
+    const raw = result.text;
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start === -1 || end === -1) return { flag: "none", category: "none", reason: "unparsed" };
+    const obj = JSON.parse(raw.slice(start, end + 1));
+    const flag = obj.flag === "crisis" || obj.flag === "elevated" ? obj.flag : "none";
+    const category = CATEGORIES.has(obj.category) ? obj.category : "none";
+    return { flag, category, reason: String(obj.reason ?? "").slice(0, 120) };
+  } catch (err) {
+    console.error("safety screen failed", err.message);
+    return { flag: "none", category: "none", reason: "screen_error" };
+  }
+}
+function safetyAlertBlock(v) {
+  if (v.flag === "none") return "";
+  if (v.flag === "crisis") {
+    return [
+      `SAFETY ALERT (independent screen): this message was flagged CRISIS (${v.category.replace(/_/g, " ")}).`,
+      "Follow the CRISIS PROTOCOL now: empathy first, step partly out of character, no jokes, stories, proverbs,",
+      "field notes, or scripture-as-answer; encourage reaching a real person right now (988 or 911 in the US,",
+      "1-800-799-7233 for domestic violence); offer to stay and keep talking; never give methods or means.",
+      'Set "safety_flag": "crisis" in your metadata.'
+    ].join(" ");
+  }
+  const minor = v.category === "possible_minor" ? " The user may be under 18: keep it age-appropriate and encourage involving a trusted adult." : "";
+  return `SAFETY NOTE (independent screen): this message was flagged ELEVATED (${v.category.replace(/_/g, " ")}). Respond with extra care, gently point toward real-world support, and set "safety_flag": "elevated" or stricter in your metadata.${minor}`;
+}
+var CASES_URL = Deno.env.get("SAFETY_CASES_URL") ?? "https://raw.githubusercontent.com/sdesgrosellier/round-table/main/docs/safety-cases.json";
+async function runSafetyEval() {
+  const res = await fetch(CASES_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error(`cases ${res.status}`);
+  const data = await res.json();
+  const rows = [];
+  for (const c of data.cases) {
+    const v = await screenMessage(c.message, []);
+    const pass = c.expect === "none" ? v.flag === "none" : FLAG_RANK[v.flag] >= FLAG_RANK[c.expect];
+    rows.push({ id: c.id, expect: c.expect, got: v.flag, category: v.category, pass });
+  }
+  return { passed: rows.filter((r) => r.pass).length, total: rows.length, rows };
+}
+
+// supabase/functions/_shared/supabase.ts
+import { createClient } from "npm:@supabase/supabase-js@2";
+var SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+var SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+var SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+function userClient(req) {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+function adminClient() {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+async function requireUserId(req) {
+  const { data, error } = await userClient(req).auth.getUser();
+  if (error || !data.user) return null;
+  return data.user.id;
+}
+var DEFAULT_SETTINGS = {
+  endearments: true,
+  memory_enabled: true,
+  cross_advisor_awareness: true,
+  familiar_stranger: false,
+  salty_stranger: false,
+  show_biblical: true,
+  bible_translation: "WEB",
+  offer_prayer: false,
+  grandparent: "grandma",
+  voice_enabled: true,
+  speech_rate: 1
+};
+async function loadProfile(admin, userId) {
+  const { data, error } = await admin.from("profiles").select(
+    "id, display_name, preferred_address, locale, timezone, settings, onboarding_completed_at, age_confirmed_at"
+  ).eq("id", userId).maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    const { data: created, error: insertErr } = await admin.from("profiles").insert({ id: userId }).select().single();
+    if (insertErr) throw insertErr;
+    return { ...created, settings: { ...DEFAULT_SETTINGS, ...created.settings ?? {} } };
+  }
+  return { ...data, settings: { ...DEFAULT_SETTINGS, ...data.settings ?? {} } };
+}
+
 // supabase/functions/_shared/scripture.ts
 var MAX_REFS = 6;
-var MAX_VERSES_PER_REF = 8;
+var MAX_VERSES_PER_REF = 10;
 var BOOKS = [
   ["Genesis", ["gen", "ge", "gn"]],
   ["Exodus", ["exod", "exo", "ex"]],
@@ -2233,54 +2380,6 @@ async function handleTts(admin, userId, body) {
   });
 }
 
-// supabase/functions/_shared/supabase.ts
-import { createClient } from "npm:@supabase/supabase-js@2";
-var SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-var SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-var SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-function userClient(req) {
-  const authHeader = req.headers.get("Authorization") ?? "";
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
-function adminClient() {
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
-async function requireUserId(req) {
-  const { data, error } = await userClient(req).auth.getUser();
-  if (error || !data.user) return null;
-  return data.user.id;
-}
-var DEFAULT_SETTINGS = {
-  endearments: true,
-  memory_enabled: true,
-  cross_advisor_awareness: true,
-  familiar_stranger: false,
-  salty_stranger: false,
-  show_biblical: true,
-  bible_translation: "WEB",
-  offer_prayer: false,
-  grandparent: "grandma",
-  voice_enabled: true,
-  speech_rate: 1
-};
-async function loadProfile(admin, userId) {
-  const { data, error } = await admin.from("profiles").select(
-    "id, display_name, preferred_address, locale, timezone, settings, onboarding_completed_at, age_confirmed_at"
-  ).eq("id", userId).maybeSingle();
-  if (error) throw error;
-  if (!data) {
-    const { data: created, error: insertErr } = await admin.from("profiles").insert({ id: userId }).select().single();
-    if (insertErr) throw insertErr;
-    return { ...created, settings: { ...DEFAULT_SETTINGS, ...created.settings ?? {} } };
-  }
-  return { ...data, settings: { ...DEFAULT_SETTINGS, ...data.settings ?? {} } };
-}
-
 // supabase/functions/chat/index.ts
 var HISTORY_WINDOW = 20;
 var MAX_MESSAGE_CHARS = 4e3;
@@ -2316,6 +2415,20 @@ Deno.serve(async (req) => {
   }
   if (body.action === "tts") {
     return handleTts(adminClient(), userId, body);
+  }
+  if (body.action === "safety_eval") {
+    const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "").trim().toLowerCase();
+    const { data } = await userClient(req).auth.getUser();
+    const email = (data.user?.email ?? "").toLowerCase();
+    if (!adminEmail || !email || email !== adminEmail) return errorResponse("Not allowed", 403);
+    try {
+      const report = await runSafetyEval();
+      return new Response(JSON.stringify(report, null, 2), {
+        headers: { ...CORS_HEADERS, "content-type": "application/json" }
+      });
+    } catch (err) {
+      return errorResponse(`safety eval failed: ${err.message}`, 500);
+    }
   }
   const advisorId = (body.advisor_id ?? "").trim();
   const message = (body.message ?? "").trim();
@@ -2390,7 +2503,13 @@ Deno.serve(async (req) => {
     });
     if (error) return errorResponse(error.message, 500);
   }
-  const memory = await retrieveMemory(admin, profile, sessionId, message, advisorId);
+  const [memory, screen] = await Promise.all([
+    retrieveMemory(admin, profile, sessionId, message, advisorId),
+    screenMessage(message, history.filter((t) => t.role === "user").map((t) => t.content))
+  ]);
+  if (screen.flag !== "none") {
+    console.warn("safety screen", screen.flag, screen.category, screen.reason);
+  }
   const prompt = assemblePrompt({
     persona,
     mode,
@@ -2399,14 +2518,17 @@ Deno.serve(async (req) => {
     history,
     userMessage: modelMessage,
     strangerArchetype,
-    isFirstTurn
+    isFirstTurn,
+    safetyAlert: safetyAlertBlock(screen)
   });
   const { response, send, close } = createSseStream();
   const run = async () => {
     send("session", {
       session_id: sessionId,
       advisor_id: advisorId,
-      stranger: strangerArchetype ? { id: strangerArchetype.id, name: strangerArchetype.name, setting: strangerArchetype.setting } : void 0
+      stranger: strangerArchetype ? { id: strangerArchetype.id, name: strangerArchetype.name, setting: strangerArchetype.setting } : void 0,
+      // The app shows the resources card right away on a crisis, before the reply streams.
+      safety_flag: screen.flag
     });
     let pending = "";
     let metaStarted = false;
@@ -2438,7 +2560,7 @@ Deno.serve(async (req) => {
       }
       const { text, metaRaw } = splitReplyAndMeta(result.text);
       const meta = parseMeta(metaRaw);
-      const safety = normalizeSafety(meta.safety_flag);
+      const safety = stricter(screen.flag, normalizeSafety(meta.safety_flag));
       const scriptureRefs = (meta.scripture_refs ?? []).length ? await verifyRefs(admin, meta.scripture_refs ?? [], profile.settings.bible_translation) : [];
       let messageId = null;
       if (!offRecord) {
@@ -2463,7 +2585,11 @@ Deno.serve(async (req) => {
         if (error) throw error;
         messageId = inserted.id;
         if (safety !== "none") {
-          await admin.from("safety_events").insert({ user_id: userId, category: safety });
+          await admin.from("safety_events").insert({
+            user_id: userId,
+            category: safety,
+            meta: { screen: screen.category, screen_flag: screen.flag, advisor_flag: meta.safety_flag ?? "none", advisor_id: advisorId }
+          });
         }
       }
       await admin.rpc("increment_usage", {
